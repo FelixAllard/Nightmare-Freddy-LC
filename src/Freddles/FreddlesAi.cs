@@ -172,17 +172,22 @@ public class FreddlesAi : EnemyAI
     }
     public bool CheckIfFlashedAt()
     {
-        
         foreach (var player in RoundManager.Instance.playersManager.allPlayerScripts)
         {
             if (!player.HasLineOfSightToPosition(transform.position))
             {
-                if (!player.helmetLight.enabled)
+                foreach (var item in player.ItemSlots)
                 {
-                    if (Vector3.Distance(player.transform.position, transform.position) < 10f)
+                    if (item.gameObject.GetComponent<FlashlightItem>() != null)
                     {
-                        Debug.Log("FLASHING!!!!");
-                        return true;
+                        if (item.gameObject.GetComponent<FlashlightItem>().isBeingUsed)
+                        {
+                            if (Vector3.Distance(player.transform.position, transform.position) < 10f)
+                            {
+                                Debug.Log("FLASHING!!!!");
+                                return true;
+                            }
+                        }
                     }
                 }
             }
