@@ -55,9 +55,10 @@ public class FreddlesAi : EnemyAI
         creatureAnimator.SetBool("Sit", sittingOrLying);
         SwitchCurrentbehaviourClientRpc((int)State.Running);
         
-        burnTick = RandomNumberGenerator.GetInt32(5, 15);
+        burnTick = RandomNumberGenerator.GetInt32(20,40);
         currentBurnProgress = 0;
         //TODO get the sitting position
+        StartCoroutine(DestroySequence(30));
     }
     public static Vector3 GetRandomPointInCollider(Collider collider)
     {
@@ -68,7 +69,7 @@ public class FreddlesAi : EnemyAI
         Vector3 randomPoint = new Vector3(
             UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
             UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
-            UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
+            UnityEngine.Random.Range(bounds.min.z, bounds.max.z-3f)
         );
 
         // Sample the position on the NavMesh
@@ -90,11 +91,15 @@ public class FreddlesAi : EnemyAI
         switch(currentBehaviourStateIndex) {
             case (int)State.Running :
                 Debug.Log("Running!");
-                creatureAnimator.SetBool("Idle",false);
+                if (creatureAnimator.GetBool("Idle"))
+                {
+                    creatureAnimator.SetBool("Idle",false);
+                }
                 SetDestinationToPosition(destination);
                 
                 if (Vector3.Distance(transform.position, destination) <1f)
                 {
+                    ModifyMaterial(0);
                     SwitchCurrentbehaviourClientRpc((int)State.Idle);
                 }
 
@@ -105,7 +110,10 @@ public class FreddlesAi : EnemyAI
                 break;
             case (int)State.LookedAt :
                 agent.ResetPath();
-                creatureAnimator.SetBool("Idle", true);
+                if (!creatureAnimator.GetBool("Idle"))
+                {
+                    creatureAnimator.SetBool("Idle",true);
+                }
                 if (currentBurnProgress > 0)
                 {
                     currentBurnProgress -= 1;
@@ -117,7 +125,16 @@ public class FreddlesAi : EnemyAI
                 }
                 break;
             case (int)State.Idle :
-                creatureAnimator.SetBool("Idle",true);
+                Debug.Log("Idle");
+                if (!creatureAnimator.GetBool("Idle"))
+                {
+                    creatureAnimator.SetBool("Idle",true);
+                }
+
+                if (endoMaterial.GetFloat("_Dissolve") == 0)
+                {
+                    ModifyMaterial(0);
+                }
                 arrived = true;
                 if (currentBurnProgress > 0)
                 {
@@ -128,13 +145,15 @@ public class FreddlesAi : EnemyAI
                 {
                     SwitchCurrentbehaviourClientRpc((int)State.Burning);
                 }
-                
-
                 break;
             case (int)State.Burning :
                 if (CheckIfFlashedAt())
                 {
-                    creatureAnimator.SetBool("Burning", true);
+                    Debug.Log("Brurning");
+                    if (!creatureAnimator.GetBool("Burning"))
+                    {
+                        creatureAnimator.SetBool("Burning", true);
+                    }
                     if (currentBurnProgress < burnTick)
                     {
                         currentBurnProgress += 1;
@@ -144,12 +163,13 @@ public class FreddlesAi : EnemyAI
                     {
                         //TODO kill Freddles
                         SwitchToBehaviourClientRpc(1000);
-                        StartCoroutine(DestroySequence());
+                        StartCoroutine(DestroySequence(3));
                     }
                 }
                 else
                 {
                     SwitchCurrentbehaviourClientRpc((int)State.Idle);
+                    
                 }
                 break;
             default:
@@ -174,18 +194,26 @@ public class FreddlesAi : EnemyAI
     {
         foreach (var player in RoundManager.Instance.playersManager.allPlayerScripts)
         {
-            if (!player.HasLineOfSightToPosition(transform.position))
+            if (player.HasLineOfSightToPosition(transform.position))
             {
                 foreach (var item in player.ItemSlots)
                 {
-                    if (item.gameObject.GetComponent<FlashlightItem>() != null)
+                    if (item != null)
                     {
-                        if (item.gameObject.GetComponent<FlashlightItem>().isBeingUsed)
+                        if (item.gameObject.GetComponent<FlashlightItem>() != null)
                         {
-                            if (Vector3.Distance(player.transform.position, transform.position) < 10f)
+                            if (item.gameObject.GetComponent<FlashlightItem>().isBeingUsed)
                             {
-                                Debug.Log("FLASHING!!!!");
-                                return true;
+                                
+                                if ( Vector3.Distance(player.transform.position, transform.position) < 3f)
+                                {
+                                    Debug.Log("Angle is : " +player.LineOfSightToPositionAngle(transform.position));
+                                    if (player.LineOfSightToPositionAngle(transform.position) < 20)
+                                    {
+                                        Debug.Log("FLASHING!!!!");
+                                        return true;
+                                    }
+                                }
                             }
                         }
                     }
@@ -199,13 +227,17 @@ public class FreddlesAi : EnemyAI
     {
         float x = Mathf.Clamp01((float)currentBurnProgress / burnTick);
         ModifyMaterial(x);
+        if (currentBurnProgress == 0)
+        {
+            creatureAnimator.SetBool("Burning", false);
+        }
     }
     public void ModifyMaterial(float x)
     {
         if (x < 1.01f && x >= 0.0f)
         {
-            endoMaterial.SetFloat("_Dissolve",x);;
-            coverMaterial.SetFloat("Vector1_FEFF47F1",x);;
+            endoMaterial.SetFloat("_Dissolve",x);
+            coverMaterial.SetFloat("Vector1_FEFF47F1",x);
         }
         
     }
@@ -216,10 +248,19 @@ public class FreddlesAi : EnemyAI
         currentBehaviourStateIndex = x;
     }
 
-    IEnumerator DestroySequence()
+    
+    IEnumerator DestroySequence( int x)
     {
         
+        yield return new WaitForSeconds(x);
+        if (currentBehaviourStateIndex == 2)
+        {
+            
+        }
+        else
+        {
+            KillEnemyClientRpc(true);
+        }
         
-        yield return new WaitForSeconds(3);
     }
 }

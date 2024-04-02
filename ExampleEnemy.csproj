@@ -7,7 +7,7 @@
     <AssemblyName>NightmareFreddy</AssemblyName>
 		<!-- This assembly description doesn't show up on Thunderstore. -->
     <!-- Configure description for Thunderstore at ./Thunderstore/thunderstore.toml -->
-    <Description>Example Enemy for Lethal Company.</Description>
+    <Description>Foxy from Five Nights At Freddy</Description>
 		<!-- This is the version of your plugin. This will be used by tcli when building our Thunderstore package. -->
     <Version>1.0.0</Version>
 		<!-- This is required for BepInEx to load us properly. -->
