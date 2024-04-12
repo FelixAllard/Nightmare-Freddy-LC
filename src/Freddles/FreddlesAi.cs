@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
 using System.Security.Cryptography;
+using GameNetcodeStuff;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -15,9 +16,11 @@ public class FreddlesAi : EnemyAI
 {
     public Material endoMaterial;
     public Material coverMaterial;
+    [Header("Audio")] 
+    public AudioClip glitchProj;
+    public AudioClip paranoidStep;
 
 
-    
     [NonSerialized] 
     public Vector3 destination;
 
@@ -40,9 +43,33 @@ public class FreddlesAi : EnemyAI
 
         arrived = false;
         //TEMPORARY MUST BE MODIFIED
+        destination = Vector3.zero;
+        while (destination==Vector3.zero)
+        {
+            destination = GetRandomPointInCollider(StartOfRound.Instance.shipInnerRoomBounds);
+            if (destination != null)
+            {
+                // Create a new NavMeshPath instance
+                NavMeshPath path = new NavMeshPath();
 
-        destination = GetRandomPointInCollider(StartOfRound.Instance.shipBounds);
-        
+                // Calculate the path to the destination
+                NavMesh.CalculatePath(transform.position, destination, NavMesh.AllAreas, path);
+
+                // Check if the path is valid
+                if (path.status == NavMeshPathStatus.PathComplete)
+                {
+                    
+                }
+                else
+                {
+                    destination = Vector3.zero;
+                }
+            }
+            else
+            {
+                Debug.LogWarning("Destination is not set!");
+            }
+        }
         //Setting if it is a sitting frebeard
         if (RandomNumberGenerator.GetInt32(2)==0)
         {
@@ -53,9 +80,9 @@ public class FreddlesAi : EnemyAI
             sittingOrLying = false;
         }
         creatureAnimator.SetBool("Sit", sittingOrLying);
-        SwitchCurrentbehaviourClientRpc((int)State.Running);
+        SwitchCurrentBehaviourClientRpc((int)State.Running);
         
-        burnTick = RandomNumberGenerator.GetInt32(20,40);
+        burnTick = RandomNumberGenerator.GetInt32(10,20);
         currentBurnProgress = 0;
         //TODO get the sitting position
         StartCoroutine(DestroySequence(30));
@@ -69,7 +96,7 @@ public class FreddlesAi : EnemyAI
         Vector3 randomPoint = new Vector3(
             UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
             UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
-            UnityEngine.Random.Range(bounds.min.z, bounds.max.z-3f)
+            UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
         );
 
         // Sample the position on the NavMesh
@@ -87,10 +114,8 @@ public class FreddlesAi : EnemyAI
     public override void DoAIInterval()
     {
         base.DoAIInterval();
-        Debug.Log("We have an Ai Intervale");
         switch(currentBehaviourStateIndex) {
             case (int)State.Running :
-                Debug.Log("Running!");
                 if (creatureAnimator.GetBool("Idle"))
                 {
                     creatureAnimator.SetBool("Idle",false);
@@ -100,12 +125,12 @@ public class FreddlesAi : EnemyAI
                 if (Vector3.Distance(transform.position, destination) <1f)
                 {
                     ModifyMaterial(0);
-                    SwitchCurrentbehaviourClientRpc((int)State.Idle);
+                    SwitchCurrentBehaviourClientRpc((int)State.Idle);
                 }
 
                 if (CheckIfLookedAt())
                 {  
-                    SwitchCurrentbehaviourClientRpc((int)State.LookedAt);
+                    SwitchCurrentBehaviourClientRpc((int)State.LookedAt);
                 }
                 break;
             case (int)State.LookedAt :
@@ -121,21 +146,41 @@ public class FreddlesAi : EnemyAI
                 }
                 if (!CheckIfLookedAt())
                 {  
-                    SwitchCurrentbehaviourClientRpc((int)State.Running);
+                    SwitchCurrentBehaviourClientRpc((int)State.Running);
                 }
                 break;
             case (int)State.Idle :
-                Debug.Log("Idle");
+                arrived = true;
+                if (IsHost)
+                {
+                    if (RandomNumberGenerator.GetInt32(100) <= 2)
+                    {
+                        PlayFootStepNoiseClientRpc();
+                    }
+                }
                 if (!creatureAnimator.GetBool("Idle"))
                 {
                     creatureAnimator.SetBool("Idle",true);
                 }
 
+                if (IsHost)
+                {
+                    if (RandomNumberGenerator.GetInt32(100) == 0)
+                    {
+                        if (!CheckIfLookedAt())
+                        {
+                            PlayFootStepNoiseClientRpc();
+                        }
+                    }
+                }
                 if (endoMaterial.GetFloat("_Dissolve") == 0)
                 {
                     ModifyMaterial(0);
+                    if (IsHost)
+                    {
+                        PlayGlitchClientRpc(false);
+                    }
                 }
-                arrived = true;
                 if (currentBurnProgress > 0)
                 {
                     currentBurnProgress -= 1;
@@ -143,13 +188,16 @@ public class FreddlesAi : EnemyAI
                 }
                 if (CheckIfFlashedAt())
                 {
-                    SwitchCurrentbehaviourClientRpc((int)State.Burning);
+                    if (IsHost)
+                    {
+                        PlayGlitchClientRpc(true);
+                    }
+                    SwitchCurrentBehaviourClientRpc((int)State.Burning);
                 }
                 break;
             case (int)State.Burning :
                 if (CheckIfFlashedAt())
                 {
-                    Debug.Log("Brurning");
                     if (!creatureAnimator.GetBool("Burning"))
                     {
                         creatureAnimator.SetBool("Burning", true);
@@ -168,12 +216,11 @@ public class FreddlesAi : EnemyAI
                 }
                 else
                 {
-                    SwitchCurrentbehaviourClientRpc((int)State.Idle);
                     
+                    SwitchCurrentBehaviourClientRpc((int)State.Idle);
                 }
                 break;
             default:
-                Debug.Log("I AM DYING");
                 break;
         }
     }
@@ -183,8 +230,7 @@ public class FreddlesAi : EnemyAI
         foreach (var player in RoundManager.Instance.playersManager.allPlayerScripts)
         {
             if (player.HasLineOfSightToPosition(transform.position))
-            {
-                Debug.Log("We got seen ....");
+            { ;
                 return true;
             }
         }
@@ -204,13 +250,10 @@ public class FreddlesAi : EnemyAI
                         {
                             if (item.gameObject.GetComponent<FlashlightItem>().isBeingUsed)
                             {
-                                
                                 if ( Vector3.Distance(player.transform.position, transform.position) < 3f)
                                 {
-                                    Debug.Log("Angle is : " +player.LineOfSightToPositionAngle(transform.position));
                                     if (player.LineOfSightToPositionAngle(transform.position) < 20)
                                     {
-                                        Debug.Log("FLASHING!!!!");
                                         return true;
                                     }
                                 }
@@ -243,15 +286,42 @@ public class FreddlesAi : EnemyAI
     }
 
     [ClientRpc]
-    public void SwitchCurrentbehaviourClientRpc(int x)
+    public void SwitchCurrentBehaviourClientRpc(int x)
     {
         currentBehaviourStateIndex = x;
     }
-
+    //AUDIO RPC
+    public void PlayFootStep()
+    {
+        creatureSFX.Play();
+    }
     
+    [ClientRpc]
+    public void PlayFootStepNoiseClientRpc()
+    {
+        creatureSFX.PlayOneShot(paranoidStep);
+        
+    }
+    [ClientRpc]
+    public void PlayGlitchClientRpc(bool x)
+    {
+        if (x)
+        {
+            if (!creatureVoice.isPlaying)
+            {
+                creatureVoice.Play();
+            }
+        }
+        else
+        {
+            creatureVoice.Stop();
+        }
+    }
+    
+
     IEnumerator DestroySequence( int x)
     {
-        
+
         yield return new WaitForSeconds(x);
         if (currentBehaviourStateIndex == 2)
         {
