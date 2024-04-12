@@ -236,31 +236,20 @@ public class FreddlesAi : EnemyAI
         }
         return false;
     }
+    
     public bool CheckIfFlashedAt()
     {
         foreach (var player in RoundManager.Instance.playersManager.allPlayerScripts)
         {
-            if (player.HasLineOfSightToPosition(transform.position))
+            if (!player.HasLineOfSightToPosition(transform.position)) continue;
+            foreach (var item in player.ItemSlots)
             {
-                foreach (var item in player.ItemSlots)
-                {
-                    if (item != null)
-                    {
-                        if (item.gameObject.GetComponent<FlashlightItem>() != null)
-                        {
-                            if (item.gameObject.GetComponent<FlashlightItem>().isBeingUsed)
-                            {
-                                if ( Vector3.Distance(player.transform.position, transform.position) < 3f)
-                                {
-                                    if (player.LineOfSightToPositionAngle(transform.position) < 20)
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                if (item == null) continue;
+                if (item.gameObject.GetComponent<FlashlightItem>() == null) continue;
+                if (!item.gameObject.GetComponent<FlashlightItem>().isBeingUsed) continue;
+                if ( !(Vector3.Distance(player.transform.position, transform.position) < 3f)) continue;
+                if (!(player.LineOfSightToPositionAngle(transform.position) < 20)) continue;
+                return true;
             }
         }
         return false;

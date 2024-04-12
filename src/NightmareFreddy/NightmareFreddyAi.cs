@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using GameNetcodeStuff;
 using NightmareFreddy.Freddles;
 using Unity.Netcode;
@@ -11,16 +12,22 @@ namespace NightmareFreddy.NightmareFreddy;
 
 public class NightmareFreddyAi : EnemyAI
 {
-    
+    [Header("Roar Global Info [ Modifiable ]")]
     public float radiusRoar = 5f; // Radius of the roar effect
     public float forceRoar = 10f; // Force of the roar effect
+    [Header("Material")]
     public Material endoSkeleton;
     public Material exoSkeleton;
+    public Material DistortionMaterial;
+    [Header("Audio")]
     public AudioSource scream;
     public AudioSource footstep;
     public AudioSource spawning;
     public AudioSource hitting;
+    public AudioClip[] gigles;
+    [Header("Attack")]
     public Transform attackArea;
+    [Header("Rendering!")]
     public SkinnedMeshRenderer FreddyRenderer;
     [NonSerialized] 
     public bool enoughFreddles;
@@ -29,13 +36,15 @@ public class NightmareFreddyAi : EnemyAI
 
     private bool didRoar;
     private Coroutine spawningMaterialChanges;
+    private float animationSpeedAttack;
     enum State {
         Hidden,
         Spawning,
         Attacking,
         Walking,
         Running,
-        Screaming
+        Screaming,
+        WaitingOnCoroutine
         
     }
 
@@ -62,8 +71,16 @@ public class NightmareFreddyAi : EnemyAI
                     if (spawningMaterialChanges == null)
                     {
                         spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
+                        SwitchToBehaviourClientRpc((int)State.Spawning);
                     }
                     
+                }
+                else
+                {
+                    if (RandomNumberGenerator.GetInt32(100) <= 3)
+                    {
+                        SpawnNewFreddle();
+                    }
                 }
                 break;
             case (int)State.Spawning :
@@ -75,31 +92,49 @@ public class NightmareFreddyAi : EnemyAI
                         spawningMaterialChanges = StartCoroutine(TransitionMaterial(false,15f));
                     }
                 }
+
+                if (endoSkeleton.GetFloat("_Strenght") == 5f)
+                {
+                    SwitchToBehaviourClientRpc((int)State.Walking);
+                }
                 //CORE LOGIC
                 
                 break;
             case (int)State.Attacking :
-
-                //CORE LOGIC
-                creatureAnimator.SetTrigger("AttackAnimation");
+                
                 agent.speed = 0f;
                 break;
             case (int)State.Walking :
-
+                targetPlayer = FindPlayerToTarget();
+                SetMovingTowardsTargetPlayer(targetPlayer);
+                if (CheckIfPlayerHittable())
+                {
+                    SwitchToBehaviourClientRpc((int)State.Attacking);
+                    creatureAnimator.SetTrigger("Attack");
+                }
                 //CORE LOGIC
                 agent.speed = 4f;
                 break;
             case (int)State.Running :
-                
+                FindPlayerToTarget();
+                SetMovingTowardsTargetPlayer(targetPlayer);
+                if (CheckIfPlayerHittable())
+                {
+                    SwitchToBehaviourClientRpc((int)State.Attacking);
+                    creatureAnimator.SetTrigger("Attack");
+                }
                 //CORE LOGIC
                 agent.speed = 7f;
-                
+
                 break;
             case (int)State.Screaming :
                 didRoar = true;
                 PerformRoarClientRpc();
-
+                SetMovingTowardsTargetPlayer(targetPlayer);
                 agent.speed = 0f;
+                break;
+            case (int)State.WaitingOnCoroutine:
+                
                 break;
             default:
                 break;
@@ -254,9 +289,11 @@ public class NightmareFreddyAi : EnemyAI
     {
         if (x < 1.01f && x >= 0.0f)
         {
-            endoSkeleton.SetFloat("NAMENOTREADY", x);
+            endoSkeleton.SetFloat("_Dissolve", x);
+            endoSkeleton.SetFloat("_Strenght",0);
             if (x==0f)
             {
+                
                 FreddyRenderer.enabled = false;
             }
             else
@@ -266,10 +303,30 @@ public class NightmareFreddyAi : EnemyAI
         }
         if (x > 1f && x <= 2.0f)
         {
-            exoSkeleton.SetFloat("NAMENOTREADY", x);
+            float y = x - 1f;
+            exoSkeleton.SetFloat("_Dissolve", y);
+            if (x == 2.0f)
+            {
+                endoSkeleton.SetFloat("_Strenght",5);
+            }
         }
         
     }
+    public bool CheckIfPlayerHittable() {
+        int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
+        Collider[] hitColliders = Physics.OverlapBox(attackArea.position, attackArea.localScale, Quaternion.identity, playerLayer);
+        if(hitColliders.Length > 0){
+            foreach (var player in hitColliders){
+                PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
+                if (playerControllerB != null)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     [ClientRpc]
     public void SwingAttackHitClientRpc(bool switchState) {
         int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
@@ -294,7 +351,7 @@ public class NightmareFreddyAi : EnemyAI
     }
 
     [ClientRpc]
-    public void OpenShipDoors()
+    public void OpenShipDoorsClientRpc()
     {
         HangarShipDoor door = GameObject.FindObjectOfType<HangarShipDoor>();
         door.doorPower = 0f;
@@ -307,5 +364,16 @@ public class NightmareFreddyAi : EnemyAI
     public void StopRoarClientRpc()
     {
         
+    }
+
+    public void PlayFootStepSounds()
+    {
+        footstep.Play();
+    }
+
+    [ClientRpc]
+    public void PlayRandomGigglesClientRpc(int x)
+    {
+        scream.PlayOneShot(gigles[x]);
     }
 }
