@@ -30,11 +30,13 @@ public class FreddlesAi : EnemyAI
     private bool sittingOrLying;
     private int burnTick;
     private int currentBurnProgress;
+    private bool canCollide = false;
     enum State {
         Running,
         LookedAt,
         Idle,
-        Burning
+        Burning,
+        Aggressive
     }
 
     public void Awake()
@@ -235,6 +237,15 @@ public class FreddlesAi : EnemyAI
                     SwitchCurrentBehaviourClientRpc((int)State.Idle);
                 }
                 break;
+            case (int)State.Aggressive :
+                if (creatureAnimator.GetBool("Idle"))
+                {
+                    creatureAnimator.SetBool("Idle",false);
+                }
+
+                TargetClosestPlayer();
+                SetDestinationToPosition(targetPlayer.transform.position);
+                break;
             default:
                 break;
         }
@@ -336,5 +347,30 @@ public class FreddlesAi : EnemyAI
             KillEnemyClientRpc(true);
         }
         
+    }
+
+    public void ActivateDangerousMod()
+    {
+        SwitchCurrentBehaviourClientRpc((int)State.Aggressive);
+        canCollide = true;
+        StopCoroutine(DestroySequence(30));
+    }
+
+    public override void OnCollideWithPlayer(Collider other)
+    {
+        base.OnCollideWithPlayer(other);
+        
+        if (canCollide)
+        {
+            
+            PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(other);
+            if (playerControllerB != null)
+            {
+                playerControllerB.DamagePlayer(20);
+                canCollide = false;
+                creatureAnimator.SetBool("Idle",true);
+                SwitchCurrentBehaviourClientRpc((int)State.Burning);
+            }
+        }
     }
 }

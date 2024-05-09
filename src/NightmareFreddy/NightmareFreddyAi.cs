@@ -8,6 +8,7 @@ using NightmareFreddy.Freddles;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UIElements.UIR;
 using static StartOfRound;
 
 namespace NightmareFreddy.NightmareFreddy;
@@ -37,10 +38,9 @@ public class NightmareFreddyAi : EnemyAI
     public bool enoughFreddles;
 
     private float timeSinceHittingLocalPlayer;
-
-    private bool didRoar;
     private Coroutine spawningMaterialChanges;
     private float animationSpeedAttack;
+    private bool wasRunning;
     enum State {
         Hidden,
         Spawning,
@@ -60,20 +60,12 @@ public class NightmareFreddyAi : EnemyAI
         endoSkeleton.SetFloat("_Dissolve",1);
         exoSkeleton.SetFloat("_Dissolve", 1);
         Sphere.enabled = false;
-        /*Vector3 hangarShipDoorPosition = GameObject.FindObjectOfType<HangarShipDoor>().transform.position;
 
-        // Perform a raycast to find the nearest point on the navmesh
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(hangarShipDoorPosition, out hit, 10f, NavMesh.AllAreas))
-        {
-            // If a valid point on the navmesh is found, warp the agent to that position
-            agent.Warp(hit.position);
-        }
-        else
-        {
-            Debug.LogError("Could not find a valid position on the NavMesh.");
-        }*/
-        StartCoroutine(TransitionMaterial(false, 0)); //TODO should be false but true for testing
+
+        SetDestinationToPosition(GameObject.FindObjectOfType<HangarShipDoor>().transform.position);
+        
+        
+        StartCoroutine(TransitionMaterial(false, 0));
         SwitchToBehaviourClientRpc(0);
     }
     
@@ -85,11 +77,7 @@ public class NightmareFreddyAi : EnemyAI
             OpenShipDoorsClientRpc();
         }
         //Making sure Scream is right
-        if (currentBehaviourStateIndex != (int)State.Screaming)
-        {
-            didRoar = false;
-        }
-        Debug.Log(currentBehaviourStateIndex);
+        Logger($"Freddy's current behaviour state = {currentBehaviourStateIndex}");
         switch(currentBehaviourStateIndex) {
             case (int)State.Hidden ://0
                 Debug.Log(GetNumberOfFreddles(true));
@@ -140,6 +128,11 @@ public class NightmareFreddyAi : EnemyAI
             case (int)State.Walking : //3
                 targetPlayer = FindPlayerToTarget();
                 SetDestinationToPosition(targetPlayer.transform.position);
+                if (RandomNumberGenerator.GetInt32(100) <= 1)
+                {
+                    Debug.Log("Let's spawn a freddle!");
+                    SpawnNewFreddle();
+                }
                 if (CheckIfPlayerHittable())
                 {
                     SwitchToBehaviourStateClientRpc((int)State.Attacking);
@@ -155,6 +148,11 @@ public class NightmareFreddyAi : EnemyAI
                 break;
             case (int)State.Running ://4
                 targetPlayer =  FindPlayerToTarget();
+                if (RandomNumberGenerator.GetInt32(100) <= 1)
+                {
+                    Debug.Log("Let's spawn a freddle!");
+                    SpawnNewFreddle();
+                }
                 SetDestinationToPosition(targetPlayer.transform.position);
                 //SetMovingTowardsTargetPlayer(targetPlayer);
                 if (CheckIfPlayerHittable())
@@ -166,7 +164,6 @@ public class NightmareFreddyAi : EnemyAI
 
                 break;
             case (int)State.Screaming ://5
-                didRoar = true;
                 
                 break;
             case (int)State.WaitingOnCoroutine:
@@ -183,14 +180,16 @@ public class NightmareFreddyAi : EnemyAI
         switch(currentBehaviourStateIndex) {
             case (int)State.Hidden ://0
                 agent.speed = 0f;
+                wasRunning = false;
                 break;
             case (int)State.Spawning ://1
                 agent.speed = 0f;
                 EnemyCollider.enabled = true;
-
+                wasRunning = false;
                 break;
             case (int)State.Attacking ://2
-                if (previousBehaviourStateIndex == (int)State.Running)
+                ActivateAllFreddlesClientRpc();
+                if (wasRunning)
                 {
                     agent.speed = 5f;
                 }
@@ -201,17 +200,23 @@ public class NightmareFreddyAi : EnemyAI
                 creatureAnimator.SetTrigger("Attack");
                 break;
             case (int)State.Walking : //3
+                ActivateAllFreddlesClientRpc();
                 agent.speed = 4f;
                 creatureAnimator.SetTrigger("Walking");
+                wasRunning = false;
                 break;
             case (int)State.Running ://4
+                ActivateAllFreddlesClientRpc();
                 agent.speed = 7f;
                 creatureAnimator.SetTrigger("Running");
+                wasRunning = true;
                 break;
             case (int)State.Screaming ://5
+                ActivateAllFreddlesClientRpc();
                 agent.speed = 0f;
                 creatureAnimator.SetTrigger("Roar");
-                PerformRoarClientRpc(); ;
+                PerformRoarClientRpc();
+                wasRunning = false;
 
                 break;
             case (int)State.WaitingOnCoroutine: //6
@@ -501,6 +506,15 @@ public class NightmareFreddyAi : EnemyAI
         }
         SwitchToBehaviourStateClientRpc(previousBehaviourStateIndex);
     }
+    [ClientRpc]
+    public void ActivateAllFreddlesClientRpc()
+    {
+        FreddlesAi[] freddles = GetAllFreddles(false);
+        foreach (var freddle in freddles)
+        {
+            freddle.ActivateDangerousMod();
+        }
+    }
 
     [ClientRpc]
     public void OpenShipDoorsClientRpc()
@@ -524,6 +538,7 @@ public class NightmareFreddyAi : EnemyAI
     {
         Sphere.enabled = false;
         SwitchToBehaviourStateClientRpc((int)State.Walking);
+        ActivateAllFreddlesClientRpc();
     }
 
     public void Logger(String log)
