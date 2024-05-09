@@ -15,8 +15,8 @@ namespace NightmareFreddy.NightmareFreddy;
 public class NightmareFreddyAi : EnemyAI
 {
     [Header("Roar Global Info [ Modifiable ]")]
-    public float radiusRoar = 5f; // Radius of the roar effect
-    public float forceRoar = 10f; // Force of the roar effect
+    public float radiusRoar = 10f; // Radius of the roar effect
+    public float forceRoar = 50f; // Force of the roar effect
     [Header("Material")]
     public Material endoSkeleton;
     public Material exoSkeleton;
@@ -32,7 +32,7 @@ public class NightmareFreddyAi : EnemyAI
     public Transform attackArea;
     [Header("Rendering!")]
     public SkinnedMeshRenderer FreddyRenderer;
-    public SkinnedMeshRenderer Sphere;
+    public MeshRenderer Sphere;
     [NonSerialized] 
     public bool enoughFreddles;
 
@@ -59,6 +59,7 @@ public class NightmareFreddyAi : EnemyAI
         endoSkeleton.SetFloat("_Strenght",0f);
         endoSkeleton.SetFloat("_Dissolve",1);
         exoSkeleton.SetFloat("_Dissolve", 1);
+        Sphere.enabled = false;
         /*Vector3 hangarShipDoorPosition = GameObject.FindObjectOfType<HangarShipDoor>().transform.position;
 
         // Perform a raycast to find the nearest point on the navmesh
@@ -79,6 +80,10 @@ public class NightmareFreddyAi : EnemyAI
     public override void DoAIInterval()
     {
         base.DoAIInterval();
+        if (Vector3.Distance(GameObject.FindObjectOfType<HangarShipDoor>().transform.position, transform.position) < 5)
+        {
+            OpenShipDoorsClientRpc();
+        }
         //Making sure Scream is right
         if (currentBehaviourStateIndex != (int)State.Screaming)
         {
@@ -89,11 +94,13 @@ public class NightmareFreddyAi : EnemyAI
             case (int)State.Hidden ://0
                 Debug.Log(GetNumberOfFreddles(true));
                 //CORE LOGIC
-                agent.speed = 0f;
-                if (GetNumberOfFreddles(true) >= 5)
+                
+                if (GetNumberOfFreddles(true) >= 1)
                 {
+                    Debug.Log("World is beauty!!!");
                     spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
                     SwitchToBehaviourStateClientRpc((int)State.Spawning);
+                    creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
                     
                 }
                 else
@@ -110,8 +117,7 @@ public class NightmareFreddyAi : EnemyAI
                 {
                     spawning.Play();
                 }
-                agent.speed = 0f;
-                EnemyCollider.enabled = true;
+                
                 if (GetNumberOfFreddles(true) <= 3 )
                 {
                     if (spawningMaterialChanges == null)
@@ -122,14 +128,14 @@ public class NightmareFreddyAi : EnemyAI
 
                 if (endoSkeleton.GetFloat("_Strenght") == 5f)
                 {
-                    SwitchToBehaviourStateClientRpc((int)State.Walking);
+                    SwitchToBehaviourStateClientRpc((int)State.Screaming);
                 }
                 //CORE LOGIC
                 
                 break;
             case (int)State.Attacking ://2
                 
-                agent.speed = 0f;
+                
                 break;
             case (int)State.Walking : //3
                 targetPlayer = FindPlayerToTarget();
@@ -137,30 +143,31 @@ public class NightmareFreddyAi : EnemyAI
                 if (CheckIfPlayerHittable())
                 {
                     SwitchToBehaviourStateClientRpc((int)State.Attacking);
-                    creatureAnimator.SetTrigger("Attack");
+                    
+                }
+                if (RandomNumberGenerator.GetInt32(200) == 1)
+                {
+                    SwitchToBehaviourStateClientRpc((int)State.Running);
+                    creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
                 }
                 //CORE LOGIC
-                agent.speed = 4f;
+                
                 break;
             case (int)State.Running ://4
-                FindPlayerToTarget();
+                targetPlayer =  FindPlayerToTarget();
                 SetDestinationToPosition(targetPlayer.transform.position);
                 //SetMovingTowardsTargetPlayer(targetPlayer);
                 if (CheckIfPlayerHittable())
                 {
                     SwitchToBehaviourStateClientRpc((int)State.Attacking);
-                    creatureAnimator.SetTrigger("Attack");
                 }
                 //CORE LOGIC
-                agent.speed = 7f;
+                
 
                 break;
             case (int)State.Screaming ://5
                 didRoar = true;
-                PerformRoarClientRpc();
-                SetDestinationToPosition(targetPlayer.transform.position);
-                //SetMovingTowardsTargetPlayer(targetPlayer); ;
-                agent.speed = 0f;
+                
                 break;
             case (int)State.WaitingOnCoroutine:
                 
@@ -169,30 +176,46 @@ public class NightmareFreddyAi : EnemyAI
                 break;
         }
     }
-
+    [ClientRpc]
     public void SwitchToBehaviourStateClientRpc(int x)
     {
         this.SwitchToBehaviourStateOnLocalClient(x);
         switch(currentBehaviourStateIndex) {
             case (int)State.Hidden ://0
+                agent.speed = 0f;
                 break;
             case (int)State.Spawning ://1
+                agent.speed = 0f;
+                EnemyCollider.enabled = true;
 
-                
                 break;
             case (int)State.Attacking ://2
-
+                if (previousBehaviourStateIndex == (int)State.Running)
+                {
+                    agent.speed = 5f;
+                }
+                else
+                {
+                    agent.speed = 0f; 
+                }
+                creatureAnimator.SetTrigger("Attack");
                 break;
             case (int)State.Walking : //3
-
+                agent.speed = 4f;
+                creatureAnimator.SetTrigger("Walking");
                 break;
             case (int)State.Running ://4
-
+                agent.speed = 7f;
+                creatureAnimator.SetTrigger("Running");
                 break;
             case (int)State.Screaming ://5
+                agent.speed = 0f;
+                creatureAnimator.SetTrigger("Roar");
+                PerformRoarClientRpc(); ;
 
                 break;
             case (int)State.WaitingOnCoroutine: //6
+                
                 
                 break;
             default:
@@ -283,15 +306,17 @@ public class NightmareFreddyAi : EnemyAI
         PlayerControllerB highest = RoundManager.Instance.playersManager.allPlayerScripts[0];
         float highestDistance = 0f;
         var position = transform.position;
-        foreach (var playerObject in RoundManager.Instance.playersManager.allPlayerObjects)
+        foreach (var playerObject in RoundManager.Instance.playersManager.allPlayerScripts)
         {
-            float distance = Vector3.Distance(playerObject.transform.position, position) +
-                             Vector3.Distance(position, doorPosition);
-            if (distance > highestDistance)
+            if (playerObject.isPlayerControlled && !playerObject.isPlayerDead)
             {
-                highest = playerObject.GetComponent<PlayerControllerB>();
+                float distance = Vector3.Distance(playerObject.transform.position, position) +
+                                 Vector3.Distance(position, doorPosition);
+                if (distance > highestDistance)
+                {
+                    highest = playerObject.GetComponent<PlayerControllerB>();
+                }
             }
-
         }
         Debug.Log(highest.name);
         return highest;
@@ -303,7 +328,21 @@ public class NightmareFreddyAi : EnemyAI
     [ClientRpc]
     private void PerformRoarClientRpc()
     {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, radiusRoar); // Find all colliders in the radius
+        
+        PlayerControllerB[] players = RoundManager.Instance.playersManager.allPlayerScripts;
+
+        foreach (var player in players)
+        {
+            if (player.isPlayerControlled && !player.isPlayerDead)
+            {
+                if (Vector3.Distance(transform.position, player.transform.position) < radiusRoar)
+                {
+                    PushingPlayer(player);                    
+                }
+            }
+            
+        }
+        /*Collider[] colliders = Physics.OverlapSphere(transform.position, radiusRoar); // Find all colliders in the radius
 
         foreach (Collider col in colliders)
         {
@@ -317,9 +356,47 @@ public class NightmareFreddyAi : EnemyAI
                     rb.AddForce(direction * forceRoar, ForceMode.Impulse); // Apply force to push the object away
                 }
             }
-        }
+        }*/
     }
-    
+    /// <summary>
+    /// Responsible for pushing back a single player!
+    /// </summary>
+    /// <param name="player"></param>
+    public void PushingPlayer(PlayerControllerB player) {
+        // Apply damage to the player
+        player.DamagePlayer(5);
+
+        // Calculate direction away from the roar
+        Vector3 direction = player.transform.position - transform.position;
+        direction.y = Mathf.Max(0, direction.y); // Ensure the y-component is non-negative
+        direction.Normalize();
+
+        // Get the player's rigidbody
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+
+        // Disable kinematic temporarily to allow applying force
+        rb.isKinematic = false;
+
+        // Calculate the force vector in the opposite direction
+        Vector3 forceVector = -direction * forceRoar;
+
+        // Add force to push the player in the opposite direction
+        rb.AddForce(forceVector, ForceMode.Impulse);
+
+        // Add upward force to make the player go upward a bit
+        rb.AddForce(Vector3.up * forceRoar/2, ForceMode.Impulse);
+
+        // Re-enable kinematic to prevent further physics interactions
+        StartCoroutine(EnableKninematicPlayer(2, rb));
+    }
+
+    private IEnumerator EnableKninematicPlayer(int i, Rigidbody rb)
+    {
+        yield return new WaitForSeconds(3);
+        rb.isKinematic = true;
+    }
+
+
     /// <summary>
     /// For the transition from visible to invisible, must be called with Coroutine
     /// </summary>
@@ -400,7 +477,12 @@ public class NightmareFreddyAi : EnemyAI
         }
         return false;
     }
-    
+
+    public void SwingAttack()
+    {
+        hitting.Play();
+        SwingAttackHitClientRpc(true);
+    }
     [ClientRpc]
     public void SwingAttackHitClientRpc(bool switchState) {
         int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
@@ -410,18 +492,14 @@ public class NightmareFreddyAi : EnemyAI
                 PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                 if (playerControllerB != null)
                 {
-                    
-
                     timeSinceHittingLocalPlayer = 0f;
                     playerControllerB.DamagePlayer(40);
+                    PushingPlayer(playerControllerB);
+                    creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
                 }
             }
         }
-
-        if (switchState = true)
-        {
-            SwitchToBehaviourClientRpc((int)State.Running);
-        }
+        SwitchToBehaviourStateClientRpc(previousBehaviourStateIndex);
     }
 
     [ClientRpc]
@@ -440,5 +518,23 @@ public class NightmareFreddyAi : EnemyAI
     public void PlayRandomGigglesClientRpc(int x)
     {
         scream.PlayOneShot(gigles[x]);
+    }
+
+    public void AnimationScreamEnd()
+    {
+        Sphere.enabled = false;
+        SwitchToBehaviourStateClientRpc((int)State.Walking);
+    }
+
+    public void Logger(String log)
+    {
+        Debug.Log("[NightmareFreddy][Freddy] ~ " + log);
+        
+    }
+
+    public void StartRoar()
+    {
+        Sphere.enabled = true;
+        scream.Play();
     }
 }
