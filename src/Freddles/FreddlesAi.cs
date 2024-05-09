@@ -37,17 +37,23 @@ public class FreddlesAi : EnemyAI
         Burning
     }
 
+    public void Awake()
+    {
+        
+    }
+
     public override void Start()
     {
         base.Start();
-
+        int attempts = 0;
         arrived = false;
         //TEMPORARY MUST BE MODIFIED
         destination = Vector3.zero;
-        while (destination==Vector3.zero)
+        while (destination==Vector3.zero && attempts<10)
         {
+            attempts++;
             destination = GetRandomPointInCollider(StartOfRound.Instance.shipInnerRoomBounds);
-            if (destination != null)
+            if (destination != null )
             {
                 // Create a new NavMeshPath instance
                 NavMeshPath path = new NavMeshPath();
@@ -63,12 +69,21 @@ public class FreddlesAi : EnemyAI
                 else
                 {
                     destination = Vector3.zero;
+                    break;
                 }
+
+                
             }
             else
             {
-                Debug.LogWarning("Destination is not set!");
+                
             }
+            
+        }
+
+        if (attempts == 10)
+        {
+            StartCoroutine(DestroySequence(0));
         }
         //Setting if it is a sitting frebeard
         if (RandomNumberGenerator.GetInt32(2)==0)
@@ -247,7 +262,7 @@ public class FreddlesAi : EnemyAI
                 if (item == null) continue;
                 if (item.gameObject.GetComponent<FlashlightItem>() == null) continue;
                 if (!item.gameObject.GetComponent<FlashlightItem>().isBeingUsed) continue;
-                if ( !(Vector3.Distance(player.transform.position, transform.position) < 3f)) continue;
+                if ( !(Vector3.Distance(player.transform.position, transform.position) < 6f)) continue;
                 if (!(player.LineOfSightToPositionAngle(transform.position) < 20)) continue;
                 return true;
             }

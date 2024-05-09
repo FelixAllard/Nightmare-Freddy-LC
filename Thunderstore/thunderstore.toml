@@ -19,11 +19,15 @@ outdir = "./Packages"
 
 [[build.copy]]
 source = "../bin/Release/netstandard2.1/NightmareFreddy.dll"
-target = "plugins/ExampleEnemy/"
+target = "plugins/NightmareFreddy/"
 
 [[build.copy]]
 source = "../../NightmareFreddy/AssetBundles/StandaloneWindows/freddlesmodassets"
-target = "plugins/ExampleEnemy/"
+target = "plugins/NightmareFreddy/"
+
+[[build.copy]]
+source = "../../NightmareFreddy/AssetBundles/StandaloneWindows/freddymodassets"
+target = "plugins/NightmareFreddy/"
 
 [[build.copy]]
 source = "./CHANGELOG.md"

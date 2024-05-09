@@ -7,6 +7,8 @@ using GameNetcodeStuff;
 using NightmareFreddy.Freddles;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.AI;
+using static StartOfRound;
 
 namespace NightmareFreddy.NightmareFreddy;
 
@@ -25,10 +27,12 @@ public class NightmareFreddyAi : EnemyAI
     public AudioSource spawning;
     public AudioSource hitting;
     public AudioClip[] gigles;
+    public BoxCollider EnemyCollider;
     [Header("Attack")]
     public Transform attackArea;
     [Header("Rendering!")]
     public SkinnedMeshRenderer FreddyRenderer;
+    public SkinnedMeshRenderer Sphere;
     [NonSerialized] 
     public bool enoughFreddles;
 
@@ -51,7 +55,25 @@ public class NightmareFreddyAi : EnemyAI
     public override void Start()
     {
         base.Start();
-        StartCoroutine(TransitionMaterial(false, 0));
+        EnemyCollider.enabled = false;
+        endoSkeleton.SetFloat("_Strenght",0f);
+        endoSkeleton.SetFloat("_Dissolve",1);
+        exoSkeleton.SetFloat("_Dissolve", 1);
+        /*Vector3 hangarShipDoorPosition = GameObject.FindObjectOfType<HangarShipDoor>().transform.position;
+
+        // Perform a raycast to find the nearest point on the navmesh
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(hangarShipDoorPosition, out hit, 10f, NavMesh.AllAreas))
+        {
+            // If a valid point on the navmesh is found, warp the agent to that position
+            agent.Warp(hit.position);
+        }
+        else
+        {
+            Debug.LogError("Could not find a valid position on the NavMesh.");
+        }*/
+        StartCoroutine(TransitionMaterial(false, 0)); //TODO should be false but true for testing
+        SwitchToBehaviourClientRpc(0);
     }
     
     public override void DoAIInterval()
@@ -62,29 +84,34 @@ public class NightmareFreddyAi : EnemyAI
         {
             didRoar = false;
         }
+        Debug.Log(currentBehaviourStateIndex);
         switch(currentBehaviourStateIndex) {
-            case (int)State.Hidden :
+            case (int)State.Hidden ://0
+                Debug.Log(GetNumberOfFreddles(true));
                 //CORE LOGIC
                 agent.speed = 0f;
                 if (GetNumberOfFreddles(true) >= 5)
                 {
-                    if (spawningMaterialChanges == null)
-                    {
-                        spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
-                        SwitchToBehaviourClientRpc((int)State.Spawning);
-                    }
+                    spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
+                    SwitchToBehaviourStateClientRpc((int)State.Spawning);
                     
                 }
                 else
                 {
-                    if (RandomNumberGenerator.GetInt32(100) <= 3)
+                    if (RandomNumberGenerator.GetInt32(100) <= 2)
                     {
+                        Debug.Log("Let's spawn a freddle!");
                         SpawnNewFreddle();
                     }
                 }
                 break;
-            case (int)State.Spawning :
+            case (int)State.Spawning ://1
+                if (!spawning.isPlaying)
+                {
+                    spawning.Play();
+                }
                 agent.speed = 0f;
+                EnemyCollider.enabled = true;
                 if (GetNumberOfFreddles(true) <= 3 )
                 {
                     if (spawningMaterialChanges == null)
@@ -95,45 +122,77 @@ public class NightmareFreddyAi : EnemyAI
 
                 if (endoSkeleton.GetFloat("_Strenght") == 5f)
                 {
-                    SwitchToBehaviourClientRpc((int)State.Walking);
+                    SwitchToBehaviourStateClientRpc((int)State.Walking);
                 }
                 //CORE LOGIC
                 
                 break;
-            case (int)State.Attacking :
+            case (int)State.Attacking ://2
                 
                 agent.speed = 0f;
                 break;
-            case (int)State.Walking :
+            case (int)State.Walking : //3
                 targetPlayer = FindPlayerToTarget();
-                SetMovingTowardsTargetPlayer(targetPlayer);
+                SetDestinationToPosition(targetPlayer.transform.position);
                 if (CheckIfPlayerHittable())
                 {
-                    SwitchToBehaviourClientRpc((int)State.Attacking);
+                    SwitchToBehaviourStateClientRpc((int)State.Attacking);
                     creatureAnimator.SetTrigger("Attack");
                 }
                 //CORE LOGIC
                 agent.speed = 4f;
                 break;
-            case (int)State.Running :
+            case (int)State.Running ://4
                 FindPlayerToTarget();
-                SetMovingTowardsTargetPlayer(targetPlayer);
+                SetDestinationToPosition(targetPlayer.transform.position);
+                //SetMovingTowardsTargetPlayer(targetPlayer);
                 if (CheckIfPlayerHittable())
                 {
-                    SwitchToBehaviourClientRpc((int)State.Attacking);
+                    SwitchToBehaviourStateClientRpc((int)State.Attacking);
                     creatureAnimator.SetTrigger("Attack");
                 }
                 //CORE LOGIC
                 agent.speed = 7f;
 
                 break;
-            case (int)State.Screaming :
+            case (int)State.Screaming ://5
                 didRoar = true;
                 PerformRoarClientRpc();
-                SetMovingTowardsTargetPlayer(targetPlayer);
+                SetDestinationToPosition(targetPlayer.transform.position);
+                //SetMovingTowardsTargetPlayer(targetPlayer); ;
                 agent.speed = 0f;
                 break;
             case (int)State.WaitingOnCoroutine:
+                
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void SwitchToBehaviourStateClientRpc(int x)
+    {
+        this.SwitchToBehaviourStateOnLocalClient(x);
+        switch(currentBehaviourStateIndex) {
+            case (int)State.Hidden ://0
+                break;
+            case (int)State.Spawning ://1
+
+                
+                break;
+            case (int)State.Attacking ://2
+
+                break;
+            case (int)State.Walking : //3
+
+                break;
+            case (int)State.Running ://4
+
+                break;
+            case (int)State.Screaming ://5
+
+                break;
+            case (int)State.WaitingOnCoroutine: //6
                 
                 break;
             default:
@@ -203,15 +262,16 @@ public class NightmareFreddyAi : EnemyAI
         allEnemiesList.AddRange(RoundManager.Instance.currentLevel.OutsideEnemies);
         var enemyToSpawn = allEnemiesList.Find(x => x.enemyType.enemyName.Equals("Freddles"));
         RoundManager.Instance.SpawnEnemyGameObject(
-            RoundManager.Instance.GetRandomPositionInRadius(
-                StartOfRound.Instance.middleOfShipNode.position,
-                15f,
+            RoundManager.Instance.GetRandomNavMeshPositionInRadius(
+                StartOfRound.Instance.shipBounds.ClosestPointOnBounds(transform.position),
                 30f
-                ), 
+                ),
             0f,
             RoundManager.Instance.currentLevel.OutsideEnemies.IndexOf(enemyToSpawn),
             enemyToSpawn.enemyType
         );
+        
+        Debug.Log("Finished spawning enemy!");
     }
     /// <summary>
     /// Function to call for Freddy to find his target. He aims to find someone that is the closest to him and the ship
@@ -219,7 +279,7 @@ public class NightmareFreddyAi : EnemyAI
     /// <returns></returns>
     private PlayerControllerB FindPlayerToTarget()
     {
-        Vector3 doorPosition =  StartOfRound.Instance.shipDoorNode.position;
+        Vector3 doorPosition = StartOfRound.Instance.shipBounds.transform.position;
         PlayerControllerB highest = RoundManager.Instance.playersManager.allPlayerScripts[0];
         float highestDistance = 0f;
         var position = transform.position;
@@ -233,7 +293,7 @@ public class NightmareFreddyAi : EnemyAI
             }
 
         }
-
+        Debug.Log(highest.name);
         return highest;
     }
     
@@ -270,27 +330,41 @@ public class NightmareFreddyAi : EnemyAI
     {
         float elapsedTime = 0;
 
-        float startValue = endoSkeleton.GetFloat("Vector1_FEFF47F1");
+        // Get the initial value of "_Dissolve" property
+        float startValue = endoSkeleton.GetFloat("_Dissolve");
 
-        float targetValue = manifest ? 0f : 2f;
-        if (manifest)
-        {
-            yield return new WaitForSeconds(1);
-        }
+        // Calculate the target value based on the manifest parameter
+        float targetValue = manifest ? 2f : 0f;
+
+        // Wait for one frame before starting the transition
+        yield return null;
+
+        // Transition loop
         while (elapsedTime < time)
         {
-            ModifyMaterial(Mathf.Lerp(startValue, targetValue, elapsedTime / time)); 
-            elapsedTime += Time.deltaTime;
+            // Calculate the new value using interpolation
+            float newValue = Mathf.Lerp(startValue, targetValue, elapsedTime / time);
+        
+            // Update the material property
+            ModifyMaterial(newValue); 
+        
+            // Increment elapsed time using unscaled time
+            elapsedTime += Time.unscaledDeltaTime;
+
+            // Wait for the next frame
             yield return null;
         }
+
+        // Ensure the material ends at the target value
         ModifyMaterial(targetValue);
     }
     public void ModifyMaterial(float x)
     {
         if (x < 1.01f && x >= 0.0f)
         {
-            endoSkeleton.SetFloat("_Dissolve", x);
+            endoSkeleton.SetFloat("_Dissolve", 1-x);
             endoSkeleton.SetFloat("_Strenght",0);
+            
             if (x==0f)
             {
                 
@@ -304,7 +378,7 @@ public class NightmareFreddyAi : EnemyAI
         if (x > 1f && x <= 2.0f)
         {
             float y = x - 1f;
-            exoSkeleton.SetFloat("_Dissolve", y);
+            exoSkeleton.SetFloat("_Dissolve", 1-y);
             if (x == 2.0f)
             {
                 endoSkeleton.SetFloat("_Strenght",5);
@@ -355,15 +429,6 @@ public class NightmareFreddyAi : EnemyAI
     {
         HangarShipDoor door = GameObject.FindObjectOfType<HangarShipDoor>();
         door.doorPower = 0f;
-    }
-
-
-
-
-    [ClientRpc]
-    public void StopRoarClientRpc()
-    {
-        
     }
 
     public void PlayFootStepSounds()
