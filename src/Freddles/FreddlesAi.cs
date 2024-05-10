@@ -97,7 +97,7 @@ public class FreddlesAi : EnemyAI
         {
             sittingOrLying = false;
         }
-        creatureAnimator.SetBool("Sit", sittingOrLying);
+        PlayAnimationClientRpc("Sit",sittingOrLying);
         SwitchCurrentBehaviourClientRpc((int)State.Running);
         
         burnTick = RandomNumberGenerator.GetInt32(10,20);
@@ -136,13 +136,14 @@ public class FreddlesAi : EnemyAI
             case (int)State.Running :
                 if (creatureAnimator.GetBool("Idle"))
                 {
-                    creatureAnimator.SetBool("Idle",false);
+                    PlayAnimationClientRpc("Idle",false);
+
                 }
                 SetDestinationToPosition(destination);
                 
                 if (Vector3.Distance(transform.position, destination) <1f)
                 {
-                    ModifyMaterial(0);
+                    ModifyMaterialClientRpc(0);
                     SwitchCurrentBehaviourClientRpc((int)State.Idle);
                 }
 
@@ -155,7 +156,8 @@ public class FreddlesAi : EnemyAI
                 agent.ResetPath();
                 if (!creatureAnimator.GetBool("Idle"))
                 {
-                    creatureAnimator.SetBool("Idle",true);
+                    PlayAnimationClientRpc("Idle",true);
+
                 }
                 if (currentBurnProgress > 0)
                 {
@@ -178,7 +180,7 @@ public class FreddlesAi : EnemyAI
                 }
                 if (!creatureAnimator.GetBool("Idle"))
                 {
-                    creatureAnimator.SetBool("Idle",true);
+                    PlayAnimationClientRpc("Idle",true);
                 }
 
                 if (IsHost)
@@ -193,7 +195,7 @@ public class FreddlesAi : EnemyAI
                 }
                 if (endoMaterial.GetFloat("_Dissolve") == 0)
                 {
-                    ModifyMaterial(0);
+                    ModifyMaterialClientRpc(0);
                     if (IsHost)
                     {
                         PlayGlitchClientRpc(false);
@@ -218,7 +220,7 @@ public class FreddlesAi : EnemyAI
                 {
                     if (!creatureAnimator.GetBool("Burning"))
                     {
-                        creatureAnimator.SetBool("Burning", true);
+                        PlayAnimationClientRpc("Burning",true);
                     }
                     if (currentBurnProgress < burnTick)
                     {
@@ -241,7 +243,7 @@ public class FreddlesAi : EnemyAI
             case (int)State.Aggressive :
                 if (creatureAnimator.GetBool("Idle"))
                 {
-                    creatureAnimator.SetBool("Idle",false);
+                    PlayAnimationClientRpc("Idle",false);
                 }
 
                 TargetClosestPlayer();
@@ -255,7 +257,8 @@ public class FreddlesAi : EnemyAI
             case(int)State.TrueBurn :
                 if (!creatureAnimator.GetBool("Burning"))
                 {
-                    creatureAnimator.SetBool("Burning", true);
+                    PlayAnimationClientRpc("Burning",true);
+
                 }
                 if (currentBurnProgress < burnTick)
                 {
@@ -306,13 +309,14 @@ public class FreddlesAi : EnemyAI
     public void ModifyMaterialBasedOnBurnProgress()
     {
         float x = Mathf.Clamp01((float)currentBurnProgress / burnTick);
-        ModifyMaterial(x);
+        ModifyMaterialClientRpc(x);
         if (currentBurnProgress == 0)
         {
-            creatureAnimator.SetBool("Burning", false);
+            PlayAnimationClientRpc("Burning",false);
         }
     }
-    public void ModifyMaterial(float x)
+    [ClientRpc]
+    public void ModifyMaterialClientRpc(float x)
     {
         if (x < 1.01f && x >= 0.0f)
         {
@@ -391,12 +395,17 @@ public class FreddlesAi : EnemyAI
                     if (playerControllerB != null)
                     {
                         playerControllerB.DamagePlayer(20);
-                        creatureAnimator.SetBool("Idle",true);
+                        PlayAnimationClientRpc("Idle",true);
                         SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
                     }
                 }
             }
         }
+    }
+    [ClientRpc]
+    public void PlayAnimationClientRpc(string name, bool value)
+    {
+        creatureAnimator.SetBool(name, value);
     }
     
     

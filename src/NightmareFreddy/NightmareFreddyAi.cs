@@ -84,9 +84,9 @@ public class NightmareFreddyAi : EnemyAI
                 {
 
                     spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
-                    SwitchToBehaviourStateClientRpc((int)State.Spawning);
-                    creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
-                    
+                    SwitchToBehaviourStateServerRpc((int)State.Spawning);
+                    PlayEuhEuhClientRpc();
+
                 }
                 else
                 {
@@ -109,10 +109,9 @@ public class NightmareFreddyAi : EnemyAI
                         spawningMaterialChanges = StartCoroutine(TransitionMaterial(false,15f));
                     }
                 }
-
                 if (endoSkeleton.GetFloat("_Strenght") == 5f)
                 {
-                    SwitchToBehaviourStateClientRpc((int)State.Screaming);
+                    SwitchToBehaviourStateServerRpc((int)State.Screaming);
                 }
                 //CORE LOGIC
                 
@@ -130,13 +129,13 @@ public class NightmareFreddyAi : EnemyAI
                 }
                 if (CheckIfPlayerHittable())
                 {
-                    SwitchToBehaviourStateClientRpc((int)State.Attacking);
+                    SwitchToBehaviourStateServerRpc((int)State.Attacking);
                     
                 }
                 if (RandomNumberGenerator.GetInt32(200) == 2)
                 {
-                    SwitchToBehaviourStateClientRpc((int)State.Running);
-                    creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
+                    SwitchToBehaviourStateServerRpc((int)State.Running);
+                    PlayEuhEuhClientRpc();
                 }
                 //CORE LOGIC
                 
@@ -151,11 +150,9 @@ public class NightmareFreddyAi : EnemyAI
                 //SetMovingTowardsTargetPlayer(targetPlayer);
                 if (CheckIfPlayerHittable())
                 {
-                    SwitchToBehaviourStateClientRpc((int)State.Attacking);
+                    SwitchToBehaviourStateServerRpc((int)State.Attacking);
                 }
                 //CORE LOGIC
-                
-
                 break;
             case (int)State.Screaming ://5
                 
@@ -166,6 +163,11 @@ public class NightmareFreddyAi : EnemyAI
             default:
                 break;
         }
+    }
+    [ServerRpc]
+    public void SwitchToBehaviourStateServerRpc(int x)
+    {
+        SwitchToBehaviourStateClientRpc(x);
     }
     [ClientRpc]
     public void SwitchToBehaviourStateClientRpc(int x)
@@ -191,27 +193,26 @@ public class NightmareFreddyAi : EnemyAI
                 {
                     agent.speed = 0f; 
                 }
-                creatureAnimator.SetTrigger("Attack");
+                PlayAnimationServerRpc("Attack");
                 break;
             case (int)State.Walking : //3
                 ActivateAllFreddlesClientRpc();
                 agent.speed = 4f;
-                creatureAnimator.SetTrigger("Walking");
+                PlayAnimationServerRpc("Walking");
                 wasRunning = false;
                 break;
             case (int)State.Running ://4
                 ActivateAllFreddlesClientRpc();
                 agent.speed = 7f;
-                creatureAnimator.SetTrigger("Running");
+                PlayAnimationServerRpc("Running");
                 wasRunning = true;
                 break;
             case (int)State.Screaming ://5
                 ActivateAllFreddlesClientRpc();
                 agent.speed = 0f;
-                creatureAnimator.SetTrigger("Roar");
+                PlayAnimationServerRpc("Roar");
                 PerformRoarClientRpc();
                 wasRunning = false;
-
                 break;
             case (int)State.WaitingOnCoroutine: //6
                 
@@ -221,6 +222,7 @@ public class NightmareFreddyAi : EnemyAI
                 break;
         }
     }
+    
     /// <summary>
     /// Pretty  Self Explanatory
     /// </summary>
@@ -277,6 +279,7 @@ public class NightmareFreddyAi : EnemyAI
     /// <summary>
     /// This function will spawn a new Freddles in a radius around the ship!
     /// </summary>
+    
     public void SpawnNewFreddle()
     {
         var allEnemiesList = new List<SpawnableEnemyWithRarity>();
@@ -422,7 +425,7 @@ public class NightmareFreddyAi : EnemyAI
             float newValue = Mathf.Lerp(startValue, targetValue, elapsedTime / time);
         
             // Update the material property
-            ModifyMaterial(newValue); 
+            ModifyMaterialClientRpc(newValue); 
         
             // Increment elapsed time using unscaled time
             elapsedTime += Time.unscaledDeltaTime;
@@ -432,9 +435,10 @@ public class NightmareFreddyAi : EnemyAI
         }
 
         // Ensure the material ends at the target value
-        ModifyMaterial(targetValue);
+        ModifyMaterialClientRpc(targetValue);
     }
-    public void ModifyMaterial(float x)
+    [ClientRpc]
+    public void ModifyMaterialClientRpc(float x)
     {
         if (x < 1.01f && x >= 0.0f)
         {
@@ -479,11 +483,17 @@ public class NightmareFreddyAi : EnemyAI
 
     public void SwingAttack()
     {
-        hitting.Play();
-        SwingAttackHitClientRpc(true);
+        
+        SwingAttackHitServerRpc(true);
     }
+    [ServerRpc]
+    public void SwingAttackHitServerRpc(bool switchState) {
+        SwingAttackHitClientRpc(switchState);
+    }
+    
     [ClientRpc]
     public void SwingAttackHitClientRpc(bool switchState) {
+        hitting.Play();
         int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
         Collider[] hitColliders = Physics.OverlapBox(attackArea.position, attackArea.localScale, Quaternion.identity, playerLayer);
         if(hitColliders.Length > 0){
@@ -501,11 +511,11 @@ public class NightmareFreddyAi : EnemyAI
                         false
                     );
                     PushingPlayer(playerControllerB);
-                    creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
+                    PlayEuhEuhClientRpc();
                 }
             }
         }
-        SwitchToBehaviourStateClientRpc(previousBehaviourStateIndex);
+        SwitchToBehaviourStateServerRpc(previousBehaviourStateIndex);
     }
     [ClientRpc]
     public void ActivateAllFreddlesClientRpc()
@@ -538,19 +548,42 @@ public class NightmareFreddyAi : EnemyAI
     public void AnimationScreamEnd()
     {
         Sphere.enabled = false;
-        SwitchToBehaviourStateClientRpc((int)State.Walking);
+        SwitchToBehaviourStateServerRpc((int)State.Walking);
         ActivateAllFreddlesClientRpc();
     }
-
+    //TODO Fix Rpc COLOR FREDDLES
     public void Logger(String log)
     {
         Debug.Log("[NightmareFreddy][Freddy] ~ " + log);
-        
+    }
+
+
+    [ClientRpc]
+    public void PlayEuhEuhClientRpc()
+    {
+        creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
+    }
+    [ClientRpc]
+    public void PlayLullabyClientRpc()
+    {
+        scream.Play();
+    }
+
+    [ServerRpc]
+    public void PlayAnimationServerRpc(String x)
+    {
+        PlayAnimationClientRpc(x);
+    }
+    [ClientRpc]
+
+    public void PlayAnimationClientRpc(String x)
+    {
+        creatureAnimator.SetTrigger(x);
     }
 
     public void StartRoar()
     {
         Sphere.enabled = true;
-        scream.Play();
+        PlayLullabyClientRpc();
     }
 }

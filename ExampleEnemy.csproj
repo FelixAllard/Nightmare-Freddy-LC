@@ -56,6 +56,9 @@
   <ItemGroup>
     <Compile Remove="src\Configuration.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Thunderstore\Packages\" />
+  </ItemGroup>
 
   <!-- Allows us to use Rpc methods. See https://github.com/EvaisaDev/UnityNetcodePatcher -->
   <!-- This MSBuild option does not work in Visual Studio, using cli option for now
