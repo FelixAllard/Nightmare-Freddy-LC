@@ -39,6 +39,7 @@ public class NightmareFreddyAi : EnemyAI
     private Coroutine spawningMaterialChanges;
     private float animationSpeedAttack;
     private bool wasRunning;
+    private int lastBeforeAttack;
     enum State {
         Hidden,
         Spawning,
@@ -119,8 +120,8 @@ public class NightmareFreddyAi : EnemyAI
                 break;
             case (int)State.Walking : //3
                 targetPlayer = FindPlayerToTarget();
-                
-                SwitchToBehaviourStateServerRpc((int)State.Attacking);
+
+                CheckIfPlayerHittableServerRpc();
                 
                 SetDestinationToPosition(targetPlayer.transform.position);
                 if (RandomNumberGenerator.GetInt32(100) <= 2)
@@ -469,7 +470,7 @@ public class NightmareFreddyAi : EnemyAI
     public void CheckIfPlayerHittableServerRpc() {
         CheckIfPlayerHittableClientRpc();
     }
-
+    [ClientRpc]
     public void CheckIfPlayerHittableClientRpc()
     {
         int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
@@ -479,6 +480,7 @@ public class NightmareFreddyAi : EnemyAI
                 PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                 if (playerControllerB != null)
                 {
+                    lastBeforeAttack = currentBehaviourStateIndex;
                     SwitchToBehaviourStateServerRpc((int)State.Attacking);
                 }
             }
@@ -519,7 +521,7 @@ public class NightmareFreddyAi : EnemyAI
                 }
             }
         }
-        SwitchToBehaviourStateServerRpc(previousBehaviourStateIndex);
+        SwitchToBehaviourStateServerRpc(lastBeforeAttack);
     }
     [ClientRpc]
     public void ActivateAllFreddlesClientRpc()
