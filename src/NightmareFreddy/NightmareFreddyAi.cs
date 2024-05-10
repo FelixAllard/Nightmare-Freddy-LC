@@ -35,6 +35,7 @@ public class NightmareFreddyAi : EnemyAI
     [Header("Rendering!")]
     public SkinnedMeshRenderer FreddyRenderer;
     public MeshRenderer Sphere;
+    public BoxCollider ScanNode;
 
     private float timeSinceHittingLocalPlayer;
     private Coroutine spawningMaterialChanges;
@@ -62,11 +63,72 @@ public class NightmareFreddyAi : EnemyAI
         Sphere.enabled = false;
 
 
-        SetDestinationToPosition(GameObject.FindObjectOfType<HangarShipDoor>().transform.position);
+        SetDestinationToPosition(StartOfRound.Instance.shipInnerRoomBounds.transform.position);
         
         
+        
+        
+        
+        
+        int attempts = 0;
+        destination = Vector3.zero;
+        while (destination==Vector3.zero && attempts<10)
+        {
+            attempts++;
+            destination = GetRandomPointInCollider(StartOfRound.Instance.shipInnerRoomBounds);
+            if (destination != null )
+            {
+                // Create a new NavMeshPath instance
+                NavMeshPath path = new NavMeshPath();
+
+                // Calculate the path to the destination
+                NavMesh.CalculatePath(transform.position, destination, NavMesh.AllAreas, path);
+
+                // Check if the path is valid
+                if (path.status == NavMeshPathStatus.PathComplete)
+                {
+                    SetDestinationToPosition(destination);
+                }
+                else
+                {
+                    destination = Vector3.zero;
+                    break;
+                }
+            }
+            else
+            {
+                
+            }
+        }
+
+        ScanNode.enabled = false;
         StartCoroutine(TransitionMaterial(false, 0));
-        SwitchToBehaviourClientRpc(0);
+        SwitchToBehaviourStateClientRpc(0);
+        
+    }
+    public static Vector3 GetRandomPointInCollider(Collider collider)
+    {
+        // Get bounds of the collider
+        Bounds bounds = collider.bounds;
+
+        // Generate a random point within the bounds
+        Vector3 randomPoint = new Vector3(
+            UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
+            UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
+            UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
+        );
+
+        // Sample the position on the NavMesh
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(randomPoint, out hit, 5.0f, NavMesh.AllAreas))
+        {
+            return hit.position;
+        }
+        else
+        {
+            // If no valid position found, return the center of the collider
+            return bounds.center;
+        }
     }
     
     public override void DoAIInterval()
@@ -120,7 +182,7 @@ public class NightmareFreddyAi : EnemyAI
                 
                 break;
             case (int)State.Walking : //3
-                targetPlayer = FindPlayerToTarget();
+                SetTargetPlayerClientRpc(FindPlayerToTarget().actualClientId);
 
                 CheckIfPlayerHittableServerRpc();
                 
@@ -138,7 +200,7 @@ public class NightmareFreddyAi : EnemyAI
                 
                 break;
             case (int)State.Running ://4
-                targetPlayer =  FindPlayerToTarget();
+                SetTargetPlayerClientRpc(FindPlayerToTarget().actualClientId);
                 if (RandomNumberGenerator.GetInt32(100) <= 1)
                 {
                     SpawnNewFreddle();
@@ -177,6 +239,7 @@ public class NightmareFreddyAi : EnemyAI
                 break;
             case (int)State.Spawning ://1
                 agent.speed = 0f;
+                ScanNode.enabled = true;
                 EnemyCollider.enabled = true;
                 wasRunning = false;
                 PlayLullabyClientRpc();
@@ -198,12 +261,14 @@ public class NightmareFreddyAi : EnemyAI
                 PlayAnimationServerRpc("Walking");
                 ActivateAllFreddlesClientRpc();
                 wasRunning = false;
+                lastBeforeAttack = (int)State.Walking;
                 break;
             case (int)State.Running ://4
                 ActivateAllFreddlesClientRpc();
                 agent.speed = 7f;
                 PlayAnimationServerRpc("Running");
                 wasRunning = true;
+                lastBeforeAttack = (int)State.Running;
                 break;
             case (int)State.Screaming ://5
                 ActivateAllFreddlesClientRpc();
@@ -307,6 +372,7 @@ public class NightmareFreddyAi : EnemyAI
     /// <returns></returns>
     private PlayerControllerB FindPlayerToTarget()
     {
+        
         Vector3 doorPosition = StartOfRound.Instance.shipBounds.transform.position;
         PlayerControllerB highest = RoundManager.Instance.playersManager.allPlayerScripts[0];
         float highestDistance = 0f;
@@ -482,7 +548,6 @@ public class NightmareFreddyAi : EnemyAI
                 PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                 if (playerControllerB != null)
                 {
-                    lastBeforeAttack = currentBehaviourStateIndex;
                     SwitchToBehaviourStateServerRpc((int)State.Attacking);
                 }
             }
@@ -536,7 +601,7 @@ public class NightmareFreddyAi : EnemyAI
                         );
                         PushingPlayer(playerControllerB);
                         PlayEuhEuhClientRpc();
-                        return;
+                        break;
                     }
                 }
             }
@@ -577,7 +642,6 @@ public class NightmareFreddyAi : EnemyAI
         SwitchToBehaviourStateServerRpc((int)State.Walking);
         ActivateAllFreddlesClientRpc();
     }
-    //TODO Fix Rpc COLOR FREDDLES
     public void Logger(String log)
     {
         Debug.Log("[NightmareFreddy][Freddy] ~ " + log);
@@ -611,5 +675,20 @@ public class NightmareFreddyAi : EnemyAI
     {
         Sphere.enabled = true;
         ScreamClientRpc();
+    }
+
+    [ClientRpc]
+    public void SetTargetPlayerClientRpc(ulong clientId)
+    {
+        PlayerControllerB[] players=  RoundManager.Instance.playersManager.allPlayerScripts;
+        foreach (var player in players)
+        {
+            if (player.actualClientId == clientId)
+            {
+                targetPlayer = player;
+                return;
+            }
+        }
+
     }
 }

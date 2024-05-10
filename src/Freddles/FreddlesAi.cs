@@ -104,7 +104,6 @@ public class FreddlesAi : EnemyAI
         
         burnTick = RandomNumberGenerator.GetInt32(10,20);
         currentBurnProgress = 0;
-        //TODO get the sitting position
         StartCoroutine(DestroySequence(30));
     }
     public static Vector3 GetRandomPointInCollider(Collider collider)
@@ -231,8 +230,7 @@ public class FreddlesAi : EnemyAI
                     }
                     else
                     {
-                        //TODO kill Freddles
-                        SwitchToBehaviourClientRpc(1000);
+                        SwitchCurrentBehaviourClientRpc((int)State.None);
                         StartCoroutine(DestroySequence(3));
                     }
                 }
@@ -254,6 +252,7 @@ public class FreddlesAi : EnemyAI
                     SetDestinationToPosition(targetPlayer.transform.position);
                     SwingAttackHitClientRpc();
                 }
+                ModifyMaterialBasedOnBurnProgress();
                 
                 break;
             case(int)State.TrueBurn :
@@ -269,7 +268,7 @@ public class FreddlesAi : EnemyAI
                 }
                 else
                 {
-                    SwitchToBehaviourClientRpc((int)State.None);
+                    SwitchCurrentBehaviourClientRpc((int)State.None);
                     StartCoroutine(DestroySequence(3));
                 }
                 break;
