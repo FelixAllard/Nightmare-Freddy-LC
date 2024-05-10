@@ -264,7 +264,6 @@ public class FreddlesAi : EnemyAI
                 }
                 else
                 {
-                    //TODO kill Freddles
                     SwitchToBehaviourClientRpc(1000);
                     StartCoroutine(DestroySequence(3));
                 }

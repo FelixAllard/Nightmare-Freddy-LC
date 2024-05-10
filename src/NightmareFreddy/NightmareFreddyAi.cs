@@ -34,8 +34,6 @@ public class NightmareFreddyAi : EnemyAI
     [Header("Rendering!")]
     public SkinnedMeshRenderer FreddyRenderer;
     public MeshRenderer Sphere;
-    [NonSerialized] 
-    public bool enoughFreddles;
 
     private float timeSinceHittingLocalPlayer;
     private Coroutine spawningMaterialChanges;
@@ -83,7 +81,7 @@ public class NightmareFreddyAi : EnemyAI
                 Debug.Log(GetNumberOfFreddles(true));
                 //CORE LOGIC
                 
-                if (GetNumberOfFreddles(true) >= 1)
+                if (GetNumberOfFreddles(true) >= 6)
                 {
                     Debug.Log("World is beauty!!!");
                     spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
@@ -128,7 +126,7 @@ public class NightmareFreddyAi : EnemyAI
             case (int)State.Walking : //3
                 targetPlayer = FindPlayerToTarget();
                 SetDestinationToPosition(targetPlayer.transform.position);
-                if (RandomNumberGenerator.GetInt32(100) <= 1)
+                if (RandomNumberGenerator.GetInt32(100) <= 2)
                 {
                     Debug.Log("Let's spawn a freddle!");
                     SpawnNewFreddle();
@@ -138,7 +136,7 @@ public class NightmareFreddyAi : EnemyAI
                     SwitchToBehaviourStateClientRpc((int)State.Attacking);
                     
                 }
-                if (RandomNumberGenerator.GetInt32(200) == 1)
+                if (RandomNumberGenerator.GetInt32(200) == 2)
                 {
                     SwitchToBehaviourStateClientRpc((int)State.Running);
                     creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
