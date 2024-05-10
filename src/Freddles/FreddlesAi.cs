@@ -37,7 +37,8 @@ public class FreddlesAi : EnemyAI
         Idle,
         Burning,
         Aggressive,
-        TrueBurn
+        TrueBurn,
+        None
     }
 
     public void Awake()
@@ -267,9 +268,12 @@ public class FreddlesAi : EnemyAI
                 }
                 else
                 {
-                    SwitchToBehaviourClientRpc(1000);
+                    SwitchToBehaviourClientRpc((int)State.None);
                     StartCoroutine(DestroySequence(3));
                 }
+                break;
+            case(int)State.None :
+                
                 break;
             default:
                 break;
