@@ -75,7 +75,6 @@ public class NightmareFreddyAi : EnemyAI
             OpenShipDoorsClientRpc();
         }
         //Making sure Scream is right
-        Logger($"Freddy's current behaviour state = {currentBehaviourStateIndex}");
         switch(currentBehaviourStateIndex) {
             case (int)State.Hidden ://0
                 Debug.Log(GetNumberOfFreddles(true));
@@ -83,7 +82,7 @@ public class NightmareFreddyAi : EnemyAI
                 
                 if (GetNumberOfFreddles(true) >= 6)
                 {
-                    Debug.Log("World is beauty!!!");
+
                     spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
                     SwitchToBehaviourStateClientRpc((int)State.Spawning);
                     creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
@@ -91,9 +90,8 @@ public class NightmareFreddyAi : EnemyAI
                 }
                 else
                 {
-                    if (RandomNumberGenerator.GetInt32(100) <= 2)
+                    if (RandomNumberGenerator.GetInt32(125) <= 2)
                     {
-                        Debug.Log("Let's spawn a freddle!");
                         SpawnNewFreddle();
                     }
                 }
@@ -128,7 +126,6 @@ public class NightmareFreddyAi : EnemyAI
                 SetDestinationToPosition(targetPlayer.transform.position);
                 if (RandomNumberGenerator.GetInt32(100) <= 2)
                 {
-                    Debug.Log("Let's spawn a freddle!");
                     SpawnNewFreddle();
                 }
                 if (CheckIfPlayerHittable())
@@ -148,7 +145,6 @@ public class NightmareFreddyAi : EnemyAI
                 targetPlayer =  FindPlayerToTarget();
                 if (RandomNumberGenerator.GetInt32(100) <= 1)
                 {
-                    Debug.Log("Let's spawn a freddle!");
                     SpawnNewFreddle();
                 }
                 SetDestinationToPosition(targetPlayer.transform.position);
@@ -496,7 +492,14 @@ public class NightmareFreddyAi : EnemyAI
                 if (playerControllerB != null)
                 {
                     timeSinceHittingLocalPlayer = 0f;
-                    playerControllerB.DamagePlayer(40);
+                    playerControllerB.DamagePlayer(
+                        40,
+                        true,
+                        true,
+                        CauseOfDeath.Bludgeoning,
+                        4,
+                        false
+                    );
                     PushingPlayer(playerControllerB);
                     creatureVoice.PlayOneShot(gigles[RandomNumberGenerator.GetInt32(3)]);
                 }

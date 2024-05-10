@@ -43,12 +43,18 @@
     <Reference Include="LethalBestiary">
       <HintPath>dlls\LethalBestiary.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine"><HintPath>../dlls/UnityEngine.CoreModule.dll</HintPath></Reference>
     <Reference Include="Assembly-CSharp"><HintPath>../dlls/Assembly-CSharp.dll</HintPath></Reference>
     <Reference Include="Unity.Netcode.Runtime"><HintPath>../dlls/Unity.Netcode.Runtime.dll</HintPath></Reference>
   </ItemGroup>
   <ItemGroup>
     <None Remove="dlls\LethalLib.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="src\Configuration.cs" />
   </ItemGroup>
 
   <!-- Allows us to use Rpc methods. See https://github.com/EvaisaDev/UnityNetcodePatcher -->

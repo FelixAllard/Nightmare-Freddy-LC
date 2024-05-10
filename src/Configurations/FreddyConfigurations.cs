@@ -3,7 +3,7 @@
 namespace NightmareFreddy.Configurations;
 
 [Serializable]
-public class FoxyConfigurations : SyncedInstance<Config>
+public class FreddyConfigurations : SyncedInstance<Config>
 {
     
 }

@@ -5,8 +5,8 @@ schemaVersion = "0.0.1"
 repository = "https://thunderstore.io"
 
 [package]
-description = "Example Enemy for Lethal Company."
-websiteUrl = "https://github.com/Hamunii/LC-ExampleEnemy"
+description = "Nightmare Freddy as a brand new Enemy! Goodbye ship mommy!"
+websiteUrl = "https://github.com/FelixAllard/Nightmare-Freddy-LC"
 containsNsfwContent = false
 [package.dependencies]
 BepInEx-BepInExPack = "5.4.2100"
