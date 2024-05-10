@@ -35,7 +35,7 @@ Please communicate with me through Discord or Github, I'll answer any worries. D
   - Idea
   - Mod image ( Used AI art, so don't go telling people I am good at this )
 - GIOVy
-  - Playtesting
+  - Playtesting! Huge help for network testing!
 - Shrki
   - Helped me with the idea
   - Found the model for Freddy

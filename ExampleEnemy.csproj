@@ -24,7 +24,7 @@
   </PropertyGroup>
   <PropertyGroup>
 	  <!-- Your Thunderstore Team name. This will be used by tcli when building our Thunderstore package. -->
-    <ThunderstoreTeam>Xilef992</ThunderstoreTeam>
+    <ThunderstoreTeam>TheWeavers</ThunderstoreTeam>
   </PropertyGroup>
 
   <ItemGroup>
