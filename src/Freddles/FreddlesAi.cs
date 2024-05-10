@@ -36,7 +36,8 @@ public class FreddlesAi : EnemyAI
         LookedAt,
         Idle,
         Burning,
-        Aggressive
+        Aggressive,
+        TrueBurn
     }
 
     public void Awake()
@@ -244,7 +245,29 @@ public class FreddlesAi : EnemyAI
                 }
 
                 TargetClosestPlayer();
-                SetDestinationToPosition(targetPlayer.transform.position);
+                if (targetPlayer != null)
+                {
+                    SetDestinationToPosition(targetPlayer.transform.position);
+                    SwingAttackHitClientRpc();
+                }
+                
+                break;
+            case(int)State.TrueBurn :
+                if (!creatureAnimator.GetBool("Burning"))
+                {
+                    creatureAnimator.SetBool("Burning", true);
+                }
+                if (currentBurnProgress < burnTick)
+                {
+                    currentBurnProgress += 1;
+                    ModifyMaterialBasedOnBurnProgress();
+                }
+                else
+                {
+                    //TODO kill Freddles
+                    SwitchToBehaviourClientRpc(1000);
+                    StartCoroutine(DestroySequence(3));
+                }
                 break;
             default:
                 break;
@@ -355,22 +378,27 @@ public class FreddlesAi : EnemyAI
         canCollide = true;
         StopCoroutine(DestroySequence(30));
     }
-
-    public override void OnCollideWithPlayer(Collider other)
-    {
-        base.OnCollideWithPlayer(other);
-        
+    [ClientRpc]
+    public void SwingAttackHitClientRpc() {
         if (canCollide)
         {
-            
-            PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(other);
-            if (playerControllerB != null)
-            {
-                playerControllerB.DamagePlayer(20);
-                canCollide = false;
-                creatureAnimator.SetBool("Idle",true);
-                SwitchCurrentBehaviourClientRpc((int)State.Burning);
+            Debug.Log("Yeah, it does...");
+            int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
+            var transform1 = transform;
+            Collider[] hitColliders = Physics.OverlapBox(transform1.position, transform1.localScale, Quaternion.identity, playerLayer);
+            if(hitColliders.Length > 0){
+                foreach (var player in hitColliders){
+                    PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
+                    if (playerControllerB != null)
+                    {
+                        playerControllerB.DamagePlayer(20);
+                        creatureAnimator.SetBool("Idle",true);
+                        SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
+                    }
+                }
             }
         }
     }
+    
+    
 }
