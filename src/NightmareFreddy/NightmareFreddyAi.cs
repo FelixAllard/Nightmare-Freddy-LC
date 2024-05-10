@@ -164,6 +164,7 @@ public class NightmareFreddyAi : EnemyAI
     {
         SwitchToBehaviourStateClientRpc(x);
     }
+    //TODO Fix no animation when spawning...
     [ClientRpc]
     public void SwitchToBehaviourStateClientRpc(int x)
     {
@@ -494,9 +495,29 @@ public class NightmareFreddyAi : EnemyAI
     }
     [ServerRpc(RequireOwnership = false)]
     public void SwingAttackHitServerRpc(bool switchState) {
+        /*hitting.Play();
+        int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
+        Collider[] hitColliders = Physics.OverlapBox(attackArea.position, attackArea.localScale, Quaternion.identity, playerLayer);
+        if(hitColliders.Length > 0){
+            foreach (var player in hitColliders){
+                PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
+                if (playerControllerB != null)
+                {
+                    timeSinceHittingLocalPlayer = 0f;
+                    playerControllerB.DamagePlayer(
+                        40
+                    );
+                    PushingPlayer(playerControllerB);
+                    PlayEuhEuhClientRpc();
+                }
+            }
+        }
+        SwitchToBehaviourStateServerRpc(lastBeforeAttack);
+        */
+        
         SwingAttackHitClientRpc(switchState);
     }
-    
+    //TODO Fix endless damage
     [ClientRpc]
     public void SwingAttackHitClientRpc(bool switchState) {
         hitting.Play();
@@ -507,17 +528,14 @@ public class NightmareFreddyAi : EnemyAI
                 PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                 if (playerControllerB != null)
                 {
-                    timeSinceHittingLocalPlayer = 0f;
-                    playerControllerB.DamagePlayer(
-                        40,
-                        true,
-                        true,
-                        CauseOfDeath.Bludgeoning,
-                        4,
-                        false
-                    );
-                    PushingPlayer(playerControllerB);
-                    PlayEuhEuhClientRpc();
+                    if (playerControllerB == RoundManager.Instance.playersManager.localPlayerController)
+                    {
+                        playerControllerB.DamagePlayer(
+                            40
+                        );
+                        PushingPlayer(playerControllerB);
+                        PlayEuhEuhClientRpc();
+                    }
                 }
             }
         }

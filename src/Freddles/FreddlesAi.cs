@@ -398,7 +398,7 @@ public class FreddlesAi : EnemyAI
                     PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                     if (playerControllerB != null)
                     {
-                        playerControllerB.DamagePlayer(20);
+                        playerControllerB.DamagePlayer(10);
                         PlayAnimationClientRpc("Idle",true);
                         SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
                     }

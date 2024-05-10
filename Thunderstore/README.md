@@ -34,6 +34,8 @@ Please communicate with me through Discord or Github, I'll answer any worries. D
   - Sound Editing
   - Idea
   - Mod image ( Used AI art, so don't go telling people I am good at this )
+- GIOVy
+  - Playtesting
 - Shrki
   - Helped me with the idea
   - Found the model for Freddy
