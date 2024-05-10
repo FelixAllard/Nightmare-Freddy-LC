@@ -1,13 +1,13 @@
 ﻿using System.Reflection;
 using UnityEngine;
 using BepInEx;
-using LethalLib.Modules;
 using BepInEx.Logging;
 using System.IO;
+using LethalBestiary.Modules;
 
 namespace NightmareFreddy.Plugin {
     [BepInPlugin(ModGUID, PluginInformation.PLUGIN_NAME, PluginInformation.PLUGIN_VERSION)]
-    [BepInDependency(LethalLib.Plugin.ModGUID)] 
+    [BepInDependency(LethalBestiary.Plugin.ModGUID)] 
     public class Plugin : BaseUnityPlugin {
         // It is a good idea for our GUID to be more unique than only the plugin name. Notice that it is used in the BepInPlugin attribute.
         // The GUID is also used for the config file name by default.
