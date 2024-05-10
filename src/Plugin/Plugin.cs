@@ -19,14 +19,14 @@ namespace NightmareFreddy.Plugin {
         public static AssetBundle ModAssetsFreddles;
         public static AssetBundle ModAssetsFreddy;
         private readonly Harmony harmony = new Harmony(PluginInformation.PLUGIN_GUID);
-        public static new Config FreddyConfig { get; internal set; }
+        public static new Config FreddyConfiguration { get; internal set; }
         private void Awake() {
             Logger = base.Logger;
 
-            FreddyConfig = new(base.Config);
+            FreddyConfiguration = new(base.Config);
 
             // This should be ran before Network Prefabs are registered.
-            
+            InitializeNetworkBehaviours();
 
             // We load the asset bundle that should be next to our DLL file, with the specified name.
             // You may want to rename your asset bundle from the AssetBundle Browser in order to avoid an issue with
@@ -52,7 +52,7 @@ namespace NightmareFreddy.Plugin {
             // Network Prefabs need to be registered. See https://docs-multiplayer.unity3d.com/netcode/current/basics/object-spawning/
             // LethalLib registers prefabs on GameNetworkManager.Start.
             NetworkPrefabs.RegisterNetworkPrefab(FreddlesEnemy.enemyPrefab);
-            Enemies.RegisterEnemy(FreddlesEnemy,FreddyConfig.RARITY_SPAWN.Value , Levels.LevelTypes.All, Enemies.SpawnType.Outside, FreddlesTN, FreddlesTK);
+            Enemies.RegisterEnemy(FreddlesEnemy,FreddyConfiguration.RARITY_SPAWN.Value , Levels.LevelTypes.All, Enemies.SpawnType.Outside, FreddlesTN, FreddlesTK);
             
             
             
@@ -65,8 +65,8 @@ namespace NightmareFreddy.Plugin {
             // Network Prefabs need to be registered. See https://docs-multiplayer.unity3d.com/netcode/current/basics/object-spawning/
             // LethalLib registers prefabs on GameNetworkManager.Start.
             NetworkPrefabs.RegisterNetworkPrefab(FreddyEnemy.enemyPrefab);
-            Enemies.RegisterEnemy(FreddyEnemy, FreddyConfig.RARITY_SPAWN.Value, Levels.LevelTypes.All, Enemies.SpawnType.Outside, FreddyTN, FreddyTK);
-            InitializeNetworkBehaviours();
+            Enemies.RegisterEnemy(FreddyEnemy, FreddyConfiguration.RARITY_SPAWN.Value, Levels.LevelTypes.All, Enemies.SpawnType.Outside, FreddyTN, FreddyTK);
+            
             harmony.PatchAll(typeof(ConfigurationsPatch));
             Debug.Log("Nightmare Freddy Loaded Successfully!");
             Debug.Log("                                                                                       \n                                  %%######%%%%                                         \n                                ###%%%%#{}{#%%%                                        \n                                ###%%%%%###%%%%                                        \n                                %##%%%%%####%%%             %##%                       \n                                 ##%%%%%####%%%          %%########%                   \n                                 #{#%%%%##{#%%%         ##%%%%%%%%#{#                  \n                                  ##%%%%##{#%%%%      %##%#{{{{{#%%##%                 \n                 %#######%        ##%%%%####%%%%%%%  %##%{{{{{{{{#%##%                 \n               %###%%%%%%#{#%   %%%%%%%%##{}{{#%%%%%%###}}}{{{{{{#%##%                 \n              %##%#{{{{#%%%#{#%%%%%%%%%%%%%%%%##%%%%%%%%{}}}}{{{#%%##                  \n              %%#{}{{{{{##%%%##%%###################%%%%%%#{{{{#%%##%                  \n              %%##}}}{{{{{{%%%######################%%##%%%%%%#%###%                   \n               %%#{}{{{{{#%%%########################%%%%##%%%###%                     \n               %%###{{#%%%%###%%%####################%%###%%%%%%%                      \n                 %####%%%%##%%%%%#####{#{{{{{{{{{{{#%########%%%%%                     \n                  %%#%%###%%###%%%#######{{##{{{#%%%%%%######%%%%%                     \n                    %%%##%%%#%%#%%%%%%%%#{{{{{%%%####%%%%###%%%%%%                     \n                     #%#%%%%%%##%%#{##%%%%{{{%%%%%#}{{#%%###%#%%%%                     \n                     #%%%%%%%#{%%%%%#{}{#%%{{%%%%#+:={#%%%%%%#%%%%                     \n                     ####%%%%##%%%%[::}{#%%#{%%%%%%%%%%%%%%###%%%%                     \n                      ####%%%#{%%%%%#%%%%%%#{{%%%%%%%%%%%%###%%%%%%%                   \n                      #####%%%%{%%%%%%%%%%##{{{%%%%%%%%#%%%%%%%%%%%%%%                 \n                      ######%#####%%%%%%#%####{{#%%#####%%%%%%%%%%%%%%%%               \n                      %%######%%%%#######%%%##{#%#{}}}{}}{###%%%%%%%%%%%               \n                    %%%%###%%%###{{{{{}{{{{#%%%{[}}}}}}}{{{##%%%%%%%%%%                \n                   ########{{{###########{{{{{{{{{{{}}}}{{###%%%%%%%%%%                \n                   ########{{##%%%%%%######{{{{{{{{{{}}{{##%%%%%%^-{%%                 \n                   %%%%%%##{{{#%%%%%%%%#####{{{{#{}}[}{{{{{()<^-^=~##%                 \n                    %%%%%%#####%%%%%%%%##{########{{}][[=~)~-~~-)(>##%                 \n                      %%%][]{{}({{#{{##{{#}]#}))#^-[]-(%>*#<*>>^(%###%%                \n                       ##{[[(]]]^*{(-]#*+#(~}%><%}^{#>[%{]%#[##%%{-{#%%                \n                        #%{{#(][]={#*[%](%#]#%##%%%%%%%%%%%%%%%>(}>##%%                \n                        #%%#%{#}%{%%%%%%%%%%%%%%%%%%%%%%%%%%%({^-]}%%%%                \n                        ##%[}##%%%%%%%%%%%%%%%%%%%%%%%%%%%%]{>:*:)%%%%                 \n                         ##]]]+[%%%%%%%%%%%%%%%%%%%%%[%%)(%>=^:~{%%%%%                 \n                         ###]<-=+(##{%%}{%#}%%(%%[<%#~(%>-[>:^#%##%%%                  \n                         ####(~*:-[}~[%<+#[=}#=)%(:]{~-#[<[#{{##%%%%                   \n                          ######(=)]~-%)-[[-+#*~{}<}%###{{###%%%%%                     \n                           %###%%%%###%%%%%%%############%%%%%%                        \n                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%{{%                          \n                               %%%%%%%%%%%%%%%%%%%%%%%%%%###%                          \n                              #%%%%%%%%%%%%%%%%%%%%####{{{}{%                          \n                              %%%%%%%%%%%%%%%  %%%%%%%#####%%                          \n                               %%%%%%%%%%%       %%%%%%%%%%%                           \n                                  %%%%%              %%%%                              \n                                                                                       ");

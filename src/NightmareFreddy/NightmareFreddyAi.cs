@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using GameNetcodeStuff;
+using NightmareFreddy.Configurations;
 using NightmareFreddy.Freddles;
 using Unity.Netcode;
 using UnityEngine;
@@ -81,7 +82,7 @@ public class NightmareFreddyAi : EnemyAI
                 Debug.Log(GetNumberOfFreddles(true));
                 //CORE LOGIC
                 
-                if (GetNumberOfFreddles(true) >= 6)
+                if (GetNumberOfFreddles(true) >=  Plugin.Plugin.FreddyConfiguration.NUMBER_FREDDLES_PHASE_2.Value)
                 {
 
                     spawningMaterialChanges = StartCoroutine(TransitionMaterial(true,10f));
@@ -91,7 +92,7 @@ public class NightmareFreddyAi : EnemyAI
                 }
                 else
                 {
-                    if (RandomNumberGenerator.GetInt32(125) <= 2)
+                    if (RandomNumberGenerator.GetInt32(Plugin.Plugin.FreddyConfiguration.POURCENTAGE_SPAWN.Value) <= 2)
                     {
                         SpawnNewFreddle();
                     }
@@ -193,9 +194,9 @@ public class NightmareFreddyAi : EnemyAI
                 PlayAnimationServerRpc("Attack");
                 break;
             case (int)State.Walking : //3
-                ActivateAllFreddlesClientRpc();
                 agent.speed = 4f;
                 PlayAnimationServerRpc("Walking");
+                ActivateAllFreddlesClientRpc();
                 wasRunning = false;
                 break;
             case (int)State.Running ://4
@@ -535,6 +536,7 @@ public class NightmareFreddyAi : EnemyAI
                         );
                         PushingPlayer(playerControllerB);
                         PlayEuhEuhClientRpc();
+                        return;
                     }
                 }
             }

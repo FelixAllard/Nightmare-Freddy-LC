@@ -9,12 +9,24 @@ public class Config :SyncedInstance<Config>
 {
     
     public ConfigEntry<int> RARITY_SPAWN { get; private set; } 
+    public ConfigEntry<int> NUMBER_FREDDLES_PHASE_2 { get; private set; } 
+    public ConfigEntry<int> POURCENTAGE_SPAWN { get; private set; } 
+    public ConfigEntry<int> DAMAGE_FREDDLES { get; private set; } 
     
     public Config(ConfigFile cfg)
     {
 
         RARITY_SPAWN = cfg.Bind("Rarity", "How rare do you want Freddy to spawn?", 40,
             "This is the usual Rarity Value that is present in every single monster mod"
+        );
+        NUMBER_FREDDLES_PHASE_2 = cfg.Bind("Difficulty", "Freddles before Freddy spaw", 6,
+            "The number of unmoving Freddles before Freddy spawns"
+        );
+        POURCENTAGE_SPAWN = cfg.Bind("Difficulty", "Change for Freddles to spawn", 125,
+            "THe higher the number, the less change for the Freddles to spawn every 0.2 seconds"
+        ); 
+        DAMAGE_FREDDLES = cfg.Bind("Difficulty", "Damage Freddles Deal to you", 10,
+            "When the Freddles are aggressive, what is the ammount of damage they would deal?"
         );
     }
     public static void RequestSync() {

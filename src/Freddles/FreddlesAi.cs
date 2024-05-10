@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Mime;
 using System.Security.Cryptography;
 using GameNetcodeStuff;
+using NightmareFreddy.Configurations;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -389,7 +390,6 @@ public class FreddlesAi : EnemyAI
     public void SwingAttackHitClientRpc() {
         if (canCollide)
         {
-            Debug.Log("Yeah, it does...");
             int playerLayer = 1 << 3; // This can be found from the game's Asset Ripper output in Unity
             var transform1 = transform;
             Collider[] hitColliders = Physics.OverlapBox(transform1.position, transform1.localScale, Quaternion.identity, playerLayer);
@@ -398,7 +398,7 @@ public class FreddlesAi : EnemyAI
                     PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                     if (playerControllerB != null)
                     {
-                        playerControllerB.DamagePlayer(10);
+                        playerControllerB.DamagePlayer(Plugin.Plugin.FreddyConfiguration.DAMAGE_FREDDLES.Value);
                         PlayAnimationClientRpc("Idle",true);
                         SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
                     }

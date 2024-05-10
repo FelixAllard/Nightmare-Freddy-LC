@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="src\Configuration.cs" />
+    <Compile Remove="src\Configurations\FreddyConfigurations.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Thunderstore\Packages\" />
