@@ -7,9 +7,9 @@
     <AssemblyName>NightmareFreddy</AssemblyName>
 		<!-- This assembly description doesn't show up on Thunderstore. -->
     <!-- Configure description for Thunderstore at ./Thunderstore/thunderstore.toml -->
-    <Description>Foxy from Five Nights At Freddy</Description>
+    <Description>Nightmare Freddy from the FNAF franchise</Description>
 		<!-- This is the version of your plugin. This will be used by tcli when building our Thunderstore package. -->
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
 		<!-- This is required for BepInEx to load us properly. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<!-- This allows us to use C#11 features, for the most part. -->

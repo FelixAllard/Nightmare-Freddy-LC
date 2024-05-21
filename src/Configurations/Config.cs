@@ -22,7 +22,7 @@ public class Config :SyncedInstance<Config>
         NUMBER_FREDDLES_PHASE_2 = cfg.Bind("Difficulty", "Freddles before Freddy spaw", 6,
             "The number of unmoving Freddles before Freddy spawns"
         );
-        POURCENTAGE_SPAWN = cfg.Bind("Difficulty", "Change for Freddles to spawn", 125,
+        POURCENTAGE_SPAWN = cfg.Bind("Difficulty", "Change for Freddles to spawn", 150,
             "THe higher the number, the less change for the Freddles to spawn every 0.2 seconds"
         ); 
         DAMAGE_FREDDLES = cfg.Bind("Difficulty", "Damage Freddles Deal to you", 10,

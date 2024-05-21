@@ -15,19 +15,21 @@ namespace NightmareFreddy.Freddles;
 
 public class FreddlesAi : EnemyAI
 {
+    
+    [Header("Material Handler!")]
     public Material endoMaterial;
+    private Material copiedEndoMaterial;
     public Material coverMaterial;
+    private Material copiedCoverMaterial;
+    public SkinnedMeshRenderer FreddlesRenderer;
     [Header("Audio")] 
     public AudioClip glitchProj;
     public AudioClip paranoidStep;
-
-
     [NonSerialized] 
     public Vector3 destination;
 
     [NonSerialized] 
     public bool arrived;
-    
     private bool sittingOrLying;
     private int burnTick;
     private int currentBurnProgress;
@@ -44,7 +46,21 @@ public class FreddlesAi : EnemyAI
 
     public void Awake()
     {
-        
+        if (endoMaterial != null)
+        {
+            copiedEndoMaterial = new Material(endoMaterial);
+        }
+
+        if (coverMaterial != null)
+        {
+            copiedCoverMaterial = new Material(coverMaterial);
+
+        }
+        FreddlesRenderer.materials =
+        [
+            copiedCoverMaterial,
+            copiedEndoMaterial
+        ];
     }
 
     public override void Start()
@@ -140,8 +156,8 @@ public class FreddlesAi : EnemyAI
                     PlayAnimationClientRpc("Idle",false);
 
                 }
+
                 SetDestinationToPosition(destination);
-                
                 if (Vector3.Distance(transform.position, destination) <1f)
                 {
                     ModifyMaterialClientRpc(0);
@@ -160,15 +176,35 @@ public class FreddlesAi : EnemyAI
                     PlayAnimationClientRpc("Idle",true);
 
                 }
+
+                if (copiedEndoMaterial.GetFloat("_Dissolve") == 0)
+                {
+                    ModifyMaterialClientRpc(0);
+                    if (IsHost)
+                    {
+                        PlayGlitchClientRpc(false);
+                    }
+                }
                 if (currentBurnProgress > 0)
                 {
                     currentBurnProgress -= 1;
                     ModifyMaterialBasedOnBurnProgress();
                 }
+                if (CheckIfFlashedAt())
+                {
+                    if (IsHost)
+                    {
+                        PlayGlitchClientRpc(true);
+                    }
+                    SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
+                    agent.ResetPath();
+                }
+                
                 if (!CheckIfLookedAt())
                 {  
                     SwitchCurrentBehaviourClientRpc((int)State.Running);
                 }
+                
                 break;
             case (int)State.Idle :
                 arrived = true;
@@ -194,7 +230,7 @@ public class FreddlesAi : EnemyAI
                         }
                     }
                 }
-                if (endoMaterial.GetFloat("_Dissolve") == 0)
+                if (copiedEndoMaterial.GetFloat("_Dissolve") == 0)
                 {
                     ModifyMaterialClientRpc(0);
                     if (IsHost)
@@ -236,8 +272,14 @@ public class FreddlesAi : EnemyAI
                 }
                 else
                 {
-                    
-                    SwitchCurrentBehaviourClientRpc((int)State.Idle);
+                    if (arrived)
+                    {
+                        SwitchCurrentBehaviourClientRpc((int)State.Idle);
+                    }
+                    else
+                    {
+                        SwitchCurrentBehaviourClientRpc((int)State.LookedAt);
+                    }
                 }
                 break;
             case (int)State.Aggressive :
@@ -324,8 +366,8 @@ public class FreddlesAi : EnemyAI
     {
         if (x < 1.01f && x >= 0.0f)
         {
-            endoMaterial.SetFloat("_Dissolve",x);
-            coverMaterial.SetFloat("Vector1_FEFF47F1",x);
+            copiedEndoMaterial.SetFloat("_Dissolve",x);
+            copiedCoverMaterial.SetFloat("Vector1_FEFF47F1",x);
         }
         
     }
@@ -410,6 +452,4 @@ public class FreddlesAi : EnemyAI
     {
         creatureAnimator.SetBool(name, value);
     }
-    
-    
 }

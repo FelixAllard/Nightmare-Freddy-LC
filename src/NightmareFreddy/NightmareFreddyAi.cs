@@ -42,6 +42,9 @@ public class NightmareFreddyAi : EnemyAI
     private float animationSpeedAttack;
     private bool wasRunning;
     private int lastBeforeAttack;
+    [Header("Head rotation stuff")]
+    public Transform freddyStare; 
+
     enum State {
         Hidden,
         Spawning,
@@ -64,11 +67,6 @@ public class NightmareFreddyAi : EnemyAI
 
 
         SetDestinationToPosition(StartOfRound.Instance.shipInnerRoomBounds.transform.position);
-        
-        
-        
-        
-        
         
         int attempts = 0;
         destination = Vector3.zero;
@@ -106,6 +104,15 @@ public class NightmareFreddyAi : EnemyAI
         SwitchToBehaviourStateClientRpc(0);
         
     }
+
+    private void LateUpdate()
+    {
+        if (targetPlayer != null)
+        {
+            freddyStare.position = targetPlayer.transform.position;
+        }
+    }
+
     public static Vector3 GetRandomPointInCollider(Collider collider)
     {
         // Get bounds of the collider
@@ -131,6 +138,7 @@ public class NightmareFreddyAi : EnemyAI
         }
     }
     
+
     public override void DoAIInterval()
     {
         base.DoAIInterval();
@@ -191,7 +199,7 @@ public class NightmareFreddyAi : EnemyAI
                 {
                     SpawnNewFreddle();
                 }
-                if (RandomNumberGenerator.GetInt32(100) == 1)
+                if (RandomNumberGenerator.GetInt32(125) == 1)
                 {
                     SwitchToBehaviourStateServerRpc((int)State.Running);
                     PlayEuhEuhClientRpc();
@@ -204,6 +212,11 @@ public class NightmareFreddyAi : EnemyAI
                 if (RandomNumberGenerator.GetInt32(100) <= 1)
                 {
                     SpawnNewFreddle();
+                }
+                if (RandomNumberGenerator.GetInt32(100) == 1)
+                {
+                    SwitchToBehaviourStateServerRpc((int)State.Walking);
+                    PlayEuhEuhClientRpc();
                 }
                 SetDestinationToPosition(targetPlayer.transform.position);
                 CheckIfPlayerHittableServerRpc();
@@ -690,5 +703,13 @@ public class NightmareFreddyAi : EnemyAI
             }
         }
 
+    }
+
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        endoSkeleton.SetFloat("_Dissolve", 1);
+        endoSkeleton.SetFloat("_Strenght",0);
+        exoSkeleton.SetFloat("_Dissolve", 1);
     }
 }
