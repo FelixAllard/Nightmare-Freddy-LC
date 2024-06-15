@@ -377,6 +377,7 @@ public class NightmareFreddyAi : EnemyAI
             enemyToSpawn.enemyType
         );
         
+        
         Debug.Log("Finished spawning enemy!");
     }
     /// <summary>
@@ -455,22 +456,24 @@ public class NightmareFreddyAi : EnemyAI
         direction.Normalize();
 
         // Get the player's rigidbody
-        Rigidbody rb = player.GetComponent<Rigidbody>();
+        //Rigidbody rb = player.GetComponent<Rigidbody>();
 
         // Disable kinematic temporarily to allow applying force
-        rb.isKinematic = false;
+        //rb.isKinematic = false;
 
         // Calculate the force vector in the opposite direction
         Vector3 forceVector = -direction * forceRoar;
 
+        player.externalForces += forceVector;
+        player.externalForces += Vector3.up * forceRoar / 2;
         // Add force to push the player in the opposite direction
-        rb.AddForce(forceVector, ForceMode.Impulse);
+        //rb.AddForce(forceVector, ForceMode.Impulse);
 
         // Add upward force to make the player go upward a bit
-        rb.AddForce(Vector3.up * forceRoar/2, ForceMode.Impulse);
+        //rb.AddForce(Vector3.up * forceRoar/2, ForceMode.Impulse);
 
         // Re-enable kinematic to prevent further physics interactions
-        StartCoroutine(EnableKninematicPlayer(2, rb));
+        //StartCoroutine(EnableKninematicPlayer(2, rb));
     }
 
     private IEnumerator EnableKninematicPlayer(int i, Rigidbody rb)

@@ -92,8 +92,6 @@ public class FreddlesAi : EnemyAI
                     destination = Vector3.zero;
                     break;
                 }
-
-                
             }
             else
             {
@@ -151,11 +149,13 @@ public class FreddlesAi : EnemyAI
         base.DoAIInterval();
         switch(currentBehaviourStateIndex) {
             case (int)State.Running :
+                agent.isStopped = false;
                 if (creatureAnimator.GetBool("Idle"))
                 {
                     PlayAnimationClientRpc("Idle",false);
 
                 }
+
 
                 SetDestinationToPosition(destination);
                 if (Vector3.Distance(transform.position, destination) <1f)
@@ -171,6 +171,7 @@ public class FreddlesAi : EnemyAI
                 break;
             case (int)State.LookedAt :
                 agent.ResetPath();
+                agent.isStopped = true;
                 if (!creatureAnimator.GetBool("Idle"))
                 {
                     PlayAnimationClientRpc("Idle",true);
@@ -208,6 +209,7 @@ public class FreddlesAi : EnemyAI
                 break;
             case (int)State.Idle :
                 arrived = true;
+                agent.isStopped = true;
                 if (IsHost)
                 {
                     if (RandomNumberGenerator.GetInt32(100) <= 2)
@@ -253,6 +255,7 @@ public class FreddlesAi : EnemyAI
                 }
                 break;
             case (int)State.Burning :
+                agent.isStopped = true;
                 if (CheckIfFlashedAt())
                 {
                     if (!creatureAnimator.GetBool("Burning"))
@@ -283,6 +286,18 @@ public class FreddlesAi : EnemyAI
                 }
                 break;
             case (int)State.Aggressive :
+                agent.isStopped = false;
+                if (CheckIfFlashedAt())
+                {
+                    if (IsHost)
+                    {
+                        PlayGlitchClientRpc(true);
+                    }
+                    PlayAnimationClientRpc("Idle",true);
+                    SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
+                    agent.ResetPath();
+                    break;
+                }
                 if (creatureAnimator.GetBool("Idle"))
                 {
                     PlayAnimationClientRpc("Idle",false);
@@ -294,10 +309,15 @@ public class FreddlesAi : EnemyAI
                     SetDestinationToPosition(targetPlayer.transform.position);
                     SwingAttackHitClientRpc();
                 }
+                else
+                {
+                    SetDestinationToPosition(destination);
+                }
                 ModifyMaterialBasedOnBurnProgress();
                 
                 break;
             case(int)State.TrueBurn :
+                agent.isStopped = true;
                 if (!creatureAnimator.GetBool("Burning"))
                 {
                     PlayAnimationClientRpc("Burning",true);
@@ -444,6 +464,30 @@ public class FreddlesAi : EnemyAI
                         SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
                     }
                 }
+            }
+        }
+    }
+    /// <summary>
+    /// When he gets hit, will be called
+    /// </summary>
+    /// <param name="force"></param>
+    /// <param name="playerWhoHit"></param>
+    /// <param name="playHitSFX"></param>
+    /// <param name="hitID"></param>
+    public override void HitEnemy(int force = 1, PlayerControllerB? playerWhoHit = null, bool playHitSFX = false, int hitID = -1) {
+        base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
+        if(isEnemyDead){
+            return;
+        }
+        enemyHP -= force;
+        if (IsOwner) {
+            if (enemyHP <= 0 && !isEnemyDead) {
+                // Our death sound will be played through creatureVoice when KillEnemy() is called.
+                // KillEnemy() will also attempt to call creatureAnimator.SetTrigger("KillEnemy"),
+                // so we don't need to call a death animation ourselves.
+                //StopCoroutine(SwingAttack());
+                // We need to stop our search coroutine, because the game does not do that by default.
+                SwitchCurrentBehaviourClientRpc((int)State.TrueBurn);
             }
         }
     }

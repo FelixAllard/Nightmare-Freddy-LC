@@ -9,7 +9,7 @@
     <!-- Configure description for Thunderstore at ./Thunderstore/thunderstore.toml -->
     <Description>Nightmare Freddy from the FNAF franchise</Description>
 		<!-- This is the version of your plugin. This will be used by tcli when building our Thunderstore package. -->
-    <Version>1.0.1</Version>
+    <Version>1.1.2</Version>
 		<!-- This is required for BepInEx to load us properly. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<!-- This allows us to use C#11 features, for the most part. -->
@@ -40,6 +40,9 @@
 
   <!-- Get references to DLL files. -->
   <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="LethalBestiary">
       <HintPath>dlls\LethalBestiary.dll</HintPath>
     </Reference>
@@ -47,7 +50,6 @@
       <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Lethal Company\Lethal Company_Data\Managed\Unity.Collections.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine"><HintPath>../dlls/UnityEngine.CoreModule.dll</HintPath></Reference>
-    <Reference Include="Assembly-CSharp"><HintPath>../dlls/Assembly-CSharp.dll</HintPath></Reference>
     <Reference Include="Unity.Netcode.Runtime"><HintPath>../dlls/Unity.Netcode.Runtime.dll</HintPath></Reference>
   </ItemGroup>
   <ItemGroup>
